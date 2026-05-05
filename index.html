@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a2d4e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Segnalazione Odori">
+  <link id="pwa-manifest" rel="manifest">
+  <title>Segnalazione Odori — Monitoraggio Ambientale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root{--bg:#eef2f7;--surface:#fff;--surface2:#f8fafc;--border:#e2e8f0;--border2:#cbd5e0;--navy:#1a2d4e;--navy-deep:#0f1e36;--primary:#2455b8;--primary-soft:#eff4ff;--alarm:#b91c1c;--alarm-deep:#991b1b;--alarm-soft:#fef2f2;--alarm-border:#fecaca;--success:#166534;--success-soft:#f0fdf4;--success-border:#bbf7d0;--warn:#92400e;--warn-soft:#fffbeb;--warn-border:#fed7aa;--text:#0f172a;--text2:#334155;--text3:#64748b;--text4:#94a3b8;--sh-sm:0 1px 3px rgba(15,23,42,.07),0 1px 2px rgba(15,23,42,.05);--sh-md:0 4px 14px rgba(15,23,42,.09),0 1px 4px rgba(15,23,42,.06);--font-d:'Barlow Condensed',sans-serif;--font-b:'Plus Jakarta Sans',sans-serif;--font-m:'IBM Plex Mono',monospace;--r:12px;--r-sm:8px;--r-lg:16px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:15px;-webkit-font-smoothing:antialiased}
+    #app{position:fixed;inset:0;display:flex;flex-direction:column;}
+    /* APP BAR */
+    .app-bar{background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 100%);padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:relative;overflow:hidden}
+    .app-bar::after{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 80% 50%,rgba(255,255,255,.06) 0%,transparent 60%);pointer-events:none}
+    .app-bar-brand{display:flex;align-items:center;gap:12px;position:relative}
+    .app-seal{width:40px;height:40px;flex-shrink:0;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center}
+    .app-seal svg{width:20px;height:20px}
+    .app-name{font-family:var(--font-d);font-size:22px;font-weight:800;color:#fff;letter-spacing:1px;line-height:1}
+    .app-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;font-weight:500}
+    .app-badge{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 10px;font-size:11px;color:rgba(255,255,255,.8);font-weight:600;font-family:var(--font-m);display:flex;align-items:center;gap:5px}
+    .dot{width:6px;height:6px;background:#4ade80;border-radius:50%;animation:blink 2s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+    /* BANNER */
+    .reminder-banner{background:var(--warn-soft);border-bottom:1px solid var(--warn-border);border-left:4px solid #d97706;padding:10px 16px;display:none;align-items:center;gap:10px;flex-shrink:0}
+    .reminder-banner.show{display:flex}
+    .reminder-ico{font-size:16px;flex-shrink:0}
+    .reminder-txt{flex:1;font-size:13px;font-weight:700;color:var(--warn);line-height:1.3}
+    .reminder-txt span{font-weight:400;color:var(--text3);display:block;font-size:12px}
+    .reminder-actions{display:flex;gap:6px}
+    .reminder-actions button{padding:5px 10px;border-radius:6px;border:none;font-family:var(--font-b);font-size:12px;font-weight:700;cursor:pointer}
+    .rbtn-go{background:#d97706;color:#fff}
+    .rbtn-close{background:transparent;color:var(--text3);border:1px solid var(--border2)!important}
+    /* PAGES */
+    .pages{flex:1;overflow:hidden;position:relative}
+    .page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
+    .page.active{display:block}
+    .page-head{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 18px 14px;position:sticky;top:0;z-index:9}
+    .page-title{font-family:var(--font-d);font-size:24px;font-weight:800;color:var(--navy);letter-spacing:.5px}
+    .page-sub{font-size:12px;color:var(--text3);margin-top:2px}
+    /* HOME */
+    .home-content{padding:18px;display:flex;flex-direction:column;gap:14px;padding-bottom:100px}
+    .card-time{background:var(--navy);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--sh-md);position:relative;overflow:hidden}
+    .card-time::before{content:'';position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.04)}
+    .time-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.4);margin-bottom:6px}
+    .time-clock{font-family:var(--font-m);font-size:52px;font-weight:500;color:#fff;letter-spacing:3px;line-height:1}
+    .time-date{font-size:13px;color:rgba(255,255,255,.6);margin-top:6px;font-weight:500;text-transform:capitalize}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-sm)}
+    .card-body{padding:16px}
+    .card-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text4);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+    .card-label svg{width:12px;height:12px;opacity:.6}
+    .pos-display{font-size:15px;font-weight:600;color:var(--text);margin-bottom:12px;line-height:1.5;display:flex;align-items:center;gap:8px;min-height:26px}
+    .pos-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .pos-dot.gps{background:var(--success);box-shadow:0 0 0 3px rgba(22,101,52,.15)}
+    .pos-dot.preset{background:var(--primary);box-shadow:0 0 0 3px rgba(36,85,184,.12)}
+    .pos-dot.temp{background:#d97706;box-shadow:0 0 0 3px rgba(217,119,6,.12)}
+    .pos-dot.none{background:var(--alarm);box-shadow:0 0 0 3px rgba(185,28,28,.12)}
+    .pos-badge{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;margin-left:auto;flex-shrink:0}
+    .pos-badge.gps{background:var(--success-soft);color:var(--success)}
+    .pos-badge.preset{background:var(--primary-soft);color:var(--primary)}
+    .pos-badge.temp{background:var(--warn-soft);color:var(--warn)}
+    .btn-change{width:100%;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-family:var(--font-b);font-size:13px;font-weight:600;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s}
+    .btn-change:active{background:var(--border)}
+    .btn-change svg{width:14px;height:14px}
+    .note-textarea{width:100%;padding:11px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-family:var(--font-b);font-size:14px;color:var(--text);resize:none;min-height:72px;outline:none;transition:border-color .2s;line-height:1.6}
+    .note-textarea:focus{border-color:var(--primary);background:var(--surface)}
+    .note-textarea::placeholder{color:var(--text4);font-style:italic}
+    /* REPORT BUTTON */
+    .btn-report{width:100%;background:var(--alarm);border:none;border-bottom:5px solid var(--alarm-deep);border-radius:var(--r-lg);padding:22px 20px 20px;cursor:pointer;transition:transform .1s,border-bottom-width .1s;box-shadow:0 6px 22px rgba(185,28,28,.35);display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;overflow:hidden}
+    .btn-report::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,transparent 50%);pointer-events:none}
+    .btn-report:active{transform:translateY(4px);border-bottom-width:1px;box-shadow:0 2px 8px rgba(185,28,28,.2)}
+    .btn-report-icon{width:38px;height:38px;opacity:.92}
+    .btn-report-title{font-family:var(--font-d);font-size:34px;font-weight:800;color:#fff;letter-spacing:1.5px;line-height:1}
+    .btn-report-sub{font-size:12px;color:rgba(255,255,255,.75);font-weight:600}
+    .last-report-inner{padding:14px 16px;display:flex;align-items:center;gap:12px}
+    .lr-icon-box{width:38px;height:38px;background:var(--primary-soft);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .lr-icon-box svg{width:18px;height:18px;color:var(--primary)}
+    .lr-main{font-size:14px;font-weight:700;color:var(--text);display:block}
+    .lr-sub{font-size:12px;color:var(--text3);margin-top:2px;display:block;font-family:var(--font-m)}
+    /* STORICO */
+    .storico-toolbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;flex-direction:column;gap:10px;position:sticky;top:0;z-index:9}
+    .filter-row{display:flex;gap:6px}
+    .filter-btn{flex:1;padding:8px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-family:var(--font-b);font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;transition:all .15s}
+    .filter-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+    .btn-pdf{width:100%;padding:10px 16px;background:var(--surface);border:1.5px solid var(--primary);border-radius:var(--r-sm);font-family:var(--font-b);font-size:13px;font-weight:700;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
+    .btn-pdf:active{background:var(--primary-soft)}
+    .btn-pdf svg{width:15px;height:15px}
+    .storico-count{padding:10px 18px 4px;font-size:11px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+    .storico-list{padding:0 16px 100px;display:flex;flex-direction:column;gap:10px}
+    .report-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-sm)}
+    .rc-head{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+    .rc-date{font-size:13px;font-weight:700;color:var(--text);text-transform:capitalize}
+    .rc-datenum{font-size:11px;color:var(--text3);margin-top:1px}
+    .rc-time{font-family:var(--font-m);font-size:17px;font-weight:500;color:var(--primary)}
+    .rc-body{padding:10px 16px 12px}
+    .rc-pos{font-size:13px;color:var(--text2);display:flex;align-items:center;gap:7px;margin-bottom:6px}
+    .rc-pos svg{width:12px;height:12px;color:var(--text4);flex-shrink:0}
+    .rc-note{font-size:12px;color:var(--text3);font-style:italic;background:var(--surface2);border-radius:6px;padding:7px 10px;margin-bottom:8px;border-left:3px solid var(--border2)}
+    .rc-del{float:right;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-family:var(--font-b);font-size:11px;font-weight:600;color:var(--text4);cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s}
+    .rc-del:active{border-color:var(--alarm);color:var(--alarm)}
+    .rc-del svg{width:11px;height:11px}
+    .empty-state{text-align:center;padding:52px 20px;color:var(--text4)}
+    .empty-icon{display:block;margin:0 auto 14px;width:48px;height:48px;opacity:.3}
+    .empty-txt{font-size:15px;font-weight:600;color:var(--text3)}
+    .empty-txt2{font-size:13px;color:var(--text4);margin-top:4px}
+    /* BACKUP */
+    .backup-content{padding:18px;display:flex;flex-direction:column;gap:14px;padding-bottom:100px}
+    .status-card{border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-sm)}
+    .status-header{padding:10px 16px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px}
+    .status-header.ok{background:var(--success-soft);color:var(--success);border-bottom:1px solid var(--success-border)}
+    .status-header.warn{background:var(--warn-soft);color:var(--warn);border-bottom:1px solid var(--warn-border)}
+    .status-header.alarm{background:var(--alarm-soft);color:var(--alarm);border-bottom:1px solid var(--alarm-border)}
+    .info-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);font-size:14px;background:var(--surface)}
+    .info-row:last-child{border-bottom:none}
+    .info-lbl{color:var(--text3);font-weight:500}
+    .info-val{font-family:var(--font-m);font-size:12px;font-weight:500;color:var(--text);text-align:right;max-width:60%;word-break:break-word}
+    .info-val.ok{color:var(--success)}
+    .info-val.alarm{color:var(--alarm)}
+    .backup-tip{background:var(--primary-soft);border:1px solid #bfdbfe;border-radius:var(--r);padding:14px 16px;font-size:13px;color:#1e40af;line-height:1.7}
+    .backup-tip strong{font-weight:700}
+    .btn-dl{width:100%;padding:15px;background:var(--primary);border:none;border-bottom:4px solid #1a3e8c;border-radius:var(--r);color:#fff;font-family:var(--font-b);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 4px 14px rgba(36,85,184,.3);transition:transform .1s,border-bottom-width .1s}
+    .btn-dl:active{transform:translateY(3px);border-bottom-width:1px}
+    .btn-dl svg{width:17px;height:17px}
+    .btn-restore{width:100%;padding:13px;background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--text2);font-family:var(--font-b);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .15s}
+    .btn-restore:active{background:var(--surface2)}
+    .btn-restore svg{width:16px;height:16px}
+    .hint{font-size:12px;color:var(--text4);text-align:center;line-height:1.6}
+    .stats-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-sm)}
+    .stats-head{padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text4);background:var(--surface2);border-bottom:1px solid var(--border)}
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr}
+    .stat-box{padding:16px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .stat-box:nth-child(2n){border-right:none}
+    .stat-box:nth-child(3),.stat-box:nth-child(4){border-bottom:none}
+    .stat-val{font-family:var(--font-d);font-size:38px;font-weight:800;color:var(--navy);line-height:1}
+    .stat-lbl{font-size:11px;color:var(--text4);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+    .danger-zone{border:1px solid var(--alarm-border);border-radius:var(--r);background:var(--alarm-soft);padding:14px 16px}
+    .dz-title{font-size:13px;font-weight:700;color:var(--alarm);margin-bottom:5px}
+    .dz-desc{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5}
+    .btn-delete{width:100%;padding:10px;background:#fff;border:1.5px solid var(--alarm-border);border-radius:var(--r-sm);color:var(--alarm);font-family:var(--font-b);font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+    .btn-delete svg{width:13px;height:13px}
+    .hidden-input{display:none}
+    /* GUIDA */
+    .guida-content{padding:18px;display:flex;flex-direction:column;gap:14px;padding-bottom:100px}
+    .guida-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-sm)}
+    .guida-head{padding:13px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .guida-hico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .guida-hico svg{width:17px;height:17px}
+    .guida-hico.blue{background:var(--primary-soft);color:var(--primary)}
+    .guida-hico.red{background:var(--alarm-soft);color:var(--alarm)}
+    .guida-hico.green{background:var(--success-soft);color:var(--success)}
+    .guida-hico.amber{background:var(--warn-soft);color:var(--warn)}
+    .guida-htitle{font-family:var(--font-d);font-size:18px;font-weight:800;color:var(--navy);letter-spacing:.5px}
+    .guida-body{padding:6px 16px 14px}
+    .g-step{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+    .g-step:last-child{border-bottom:none}
+    .g-num{width:26px;height:26px;background:var(--navy);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:1px}
+    .g-text{font-size:14px;color:var(--text2);line-height:1.55}
+    .g-text em{color:var(--navy);font-style:normal;font-weight:700}
+    .g-note{margin-top:3px;font-size:12px;color:var(--text4)}
+    .os-section{padding:10px 0;border-bottom:1px solid var(--border)}
+    .os-section:last-child{border-bottom:none}
+    .os-label{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .g-step-mini{display:flex;gap:10px;padding:5px 0}
+    .g-num-mini{width:20px;height:20px;background:var(--border2);color:var(--text3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
+    .g-text-mini{font-size:13px;color:var(--text2);line-height:1.5}
+    .g-text-mini em{color:var(--navy);font-style:normal;font-weight:700}
+    .btn-install{width:100%;padding:14px;background:var(--navy);border:none;border-radius:var(--r);color:#fff;font-family:var(--font-b);font-size:14px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:8px}
+    .btn-install svg{width:16px;height:16px}
+    /* BOTTOM NAV */
+    .bottom-nav{background:var(--surface);border-top:1px solid var(--border);display:flex;height:62px;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px rgba(15,23,42,.06)}
+    .nav-btn{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text4);font-family:var(--font-b);font-size:10px;font-weight:700;cursor:pointer;transition:color .2s;position:relative}
+    .nav-btn svg{width:22px;height:22px;transition:transform .2s}
+    .nav-btn.active{color:var(--primary)}
+    .nav-btn.active svg{transform:scale(1.12)}
+    .nav-badge{position:absolute;top:7px;right:calc(50% - 20px);width:9px;height:9px;background:var(--alarm);border-radius:50%;border:2px solid var(--surface);display:none}
+    .nav-badge.show{display:block}
+    /* MODALS */
+    .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;display:flex;align-items:flex-end;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+    .modal-overlay.show{opacity:1;visibility:visible}
+    .modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(.16,1,.3,1);max-height:92vh;overflow-y:auto}
+    .modal-overlay.show .modal-sheet{transform:translateY(0)}
+    .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 20px}
+    .modal-title{font-family:var(--font-d);font-size:24px;font-weight:800;color:var(--navy);margin-bottom:20px;letter-spacing:.5px}
+    .form-group{margin-bottom:16px}
+    .form-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:block;margin-bottom:6px}
+    .form-input{width:100%;padding:13px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:var(--font-b);font-size:15px;outline:none;transition:border-color .2s}
+    .form-input:focus{border-color:var(--primary);background:var(--surface)}
+    .form-input::placeholder{color:var(--text4)}
+    .btn-gps-capture{width:100%;padding:11px;background:var(--success-soft);border:1.5px solid var(--success-border);border-radius:var(--r-sm);color:var(--success);font-family:var(--font-b);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+    .btn-gps-capture svg{width:15px;height:15px}
+    .gps-status-txt{font-size:12px;color:var(--text4);text-align:center;margin-top:6px;min-height:18px;font-family:var(--font-m)}
+    .modal-actions{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+    .btn-m-primary{width:100%;padding:14px;background:var(--primary);border:none;border-radius:var(--r-sm);color:#fff;font-family:var(--font-b);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+    .btn-m-secondary{width:100%;padding:13px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--text2);font-family:var(--font-b);font-size:14px;font-weight:700;cursor:pointer}
+    .btn-m-cancel{width:100%;padding:12px;background:none;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text4);font-family:var(--font-b);font-size:13px;font-weight:600;cursor:pointer}
+    /* SUCCESS */
+    #success-modal{position:fixed;inset:0;z-index:200;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s;pointer-events:none}
+    #success-modal.show{opacity:1;visibility:visible}
+    .succ-check{width:80px;height:80px;background:var(--success-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+    .succ-check svg{width:40px;height:40px;color:var(--success)}
+    .succ-title{font-family:var(--font-d);font-size:36px;font-weight:800;color:var(--navy);letter-spacing:1px;margin-bottom:6px}
+    .succ-divider{width:40px;height:2px;background:var(--border);margin:18px auto;border-radius:1px}
+    .succ-label{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text4);font-weight:700}
+    .succ-sub{font-size:14px;color:var(--text3);font-family:var(--font-m);margin-top:4px}
+    @keyframes popIn{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+    ::-webkit-scrollbar{width:3px}
+    ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+  </style>
+</head>
+<body>
+<div id="app">
+  <header class="app-bar">
+    <div class="app-bar-brand">
+      <div class="app-seal">
+        <svg fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+      </div>
+      <div>
+        <div class="app-name">SEGNALAZIONE ODORI</div>
+        <div class="app-sub">Monitoraggio ambientale cittadino</div>
+      </div>
+    </div>
+    <div class="app-badge"><span class="dot"></span>ATTIVO</div>
+  </header>
+
+  <div id="backup-reminder" class="reminder-banner">
+    <span class="reminder-ico">&#9888;</span>
+    <div class="reminder-txt">Backup consigliato<span>Trascorsi 7+ giorni dall&apos;ultimo backup</span></div>
+    <div class="reminder-actions">
+      <button class="rbtn-go" onclick="navigateTo('backup');dismissReminder()">Esegui ora</button>
+      <button class="rbtn-close" onclick="dismissReminder()">&#10005;</button>
+    </div>
+  </div>
+
+  <div class="pages">
+    <!-- HOME -->
+    <div id="page-home" class="page active">
+      <div class="home-content">
+        <div class="card-time">
+          <div class="time-label">Data e ora corrente</div>
+          <div id="current-time" class="time-clock">--:--</div>
+          <div id="current-date" class="time-date">--</div>
+        </div>
+        <div class="card"><div class="card-body">
+          <div class="card-label"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Posizione di segnalazione</div>
+          <div id="position-display" class="pos-display"><span class="pos-dot none"></span><span>Rilevamento in corso&hellip;</span></div>
+          <button class="btn-change" onclick="openChangePosition()"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cambia posizione</button>
+        </div></div>
+        <div class="card"><div class="card-body">
+          <div class="card-label"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Descrizione (facoltativa)</div>
+          <textarea id="note-input" class="note-textarea" placeholder="Es. odore di spazzatura, odore acre o pungente, persistente da circa 20 minuti&hellip;"></textarea>
+        </div></div>
+        <button class="btn-report" onclick="segnalaOdore()">
+          <svg class="btn-report-icon" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="btn-report-title">REGISTRA SEGNALAZIONE</span>
+          <span class="btn-report-sub">Registra un episodio di odore molesto</span>
+        </button>
+        <div class="card"><div class="last-report-inner">
+          <div class="lr-icon-box"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div><span id="last-report-main" class="lr-main">Nessuna segnalazione</span><span id="last-report-sub" class="lr-sub">Le segnalazioni appariranno qui</span></div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- STORICO -->
+    <div id="page-storico" class="page">
+      <div class="storico-toolbar">
+        <div class="filter-row">
+          <button id="filter-7" class="filter-btn" onclick="setFilter('7')">Ultimi 7 giorni</button>
+          <button id="filter-30" class="filter-btn" onclick="setFilter('30')">Ultimi 30 giorni</button>
+          <button id="filter-all" class="filter-btn active" onclick="setFilter('all')">Tutte</button>
+        </div>
+        <button class="btn-pdf" onclick="exportPDF()"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Esporta report PDF</button>
+      </div>
+      <div id="storico-count" class="storico-count">0 segnalazioni</div>
+      <div id="storico-list" class="storico-list">
+        <div class="empty-state"><svg class="empty-icon" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><div class="empty-txt">Nessuna segnalazione</div><div class="empty-txt2">Vai su Home e segnala il primo episodio</div></div>
+      </div>
+    </div>
+
+    <!-- BACKUP -->
+    <div id="page-backup" class="page">
+      <div class="page-head"><div class="page-title">Backup &amp; Dati</div><div class="page-sub">Gestione sicurezza dei dati raccolti</div></div>
+      <div class="backup-content">
+        <div class="status-card">
+          <div id="backup-status-header" class="status-header warn">Stato backup</div>
+          <div class="info-row"><span class="info-lbl">Ultimo backup</span><span class="info-val" id="last-backup-date">Mai eseguito</span></div>
+          <div class="info-row"><span class="info-lbl">Segnalazioni archiviate</span><span class="info-val" id="total-reports">0</span></div>
+          <div class="info-row"><span class="info-lbl">Prima segnalazione</span><span class="info-val" id="first-report-date">&mdash;</span></div>
+          <div class="info-row"><span class="info-lbl">Ultima segnalazione</span><span class="info-val" id="last-report-date-stat">&mdash;</span></div>
+        </div>
+        <div class="backup-tip"><strong>Importante:</strong> esegui il backup almeno ogni <strong>7 giorni</strong>. L&apos;app ti avvisa automaticamente. In caso di cambio telefono, i dati non sono recuperabili senza un file di backup aggiornato.</div>
+        <button class="btn-dl" onclick="downloadBackup()"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Scarica backup dati</button>
+        <button class="btn-restore" onclick="document.getElementById('restore-input').click()"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Ripristina da file di backup</button>
+        <input type="file" id="restore-input" class="hidden-input" accept=".json" onchange="restoreBackup(event)">
+        <p class="hint">Il file di backup ha estensione <strong>.json</strong> e inizia con <strong>backup-segnalazione-odori-</strong></p>
+        <div class="stats-card">
+          <div class="stats-head">Statistiche segnalazioni</div>
+          <div class="stats-grid">
+            <div class="stat-box"><div class="stat-val" id="stat-total">0</div><div class="stat-lbl">Totale</div></div>
+            <div class="stat-box"><div class="stat-val" id="stat-last30">0</div><div class="stat-lbl">Ultimi 30 gg</div></div>
+            <div class="stat-box"><div class="stat-val" id="stat-last7">0</div><div class="stat-lbl">Ultimi 7 gg</div></div>
+            <div class="stat-box"><div class="stat-val" id="stat-today">0</div><div class="stat-lbl">Oggi</div></div>
+          </div>
+        </div>
+        <div class="danger-zone">
+          <div class="dz-title">Zona pericolosa</div>
+          <div class="dz-desc">Elimina definitivamente tutte le segnalazioni. L&apos;operazione non &egrave; reversibile. Scarica un backup prima di procedere.</div>
+          <button class="btn-delete" onclick="deleteAllData()"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Elimina tutti i dati</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GUIDA -->
+    <div id="page-istruzioni" class="page">
+      <div class="page-head"><div class="page-title">Guida all&apos;uso</div><div class="page-sub">Istruzioni passo per passo</div></div>
+      <div class="guida-content">
+        <div class="guida-section">
+          <div class="guida-head"><div class="guida-hico red"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="guida-htitle">SEGNALARE UN ODORE</div></div>
+          <div class="guida-body">
+            <div class="g-step"><div class="g-num">1</div><div class="g-text">Apri l&apos;app toccando l&apos;icona nella schermata Home del telefono</div></div>
+            <div class="g-step"><div class="g-num">2</div><div class="g-text">Verifica che la posizione mostrata sia quella corretta</div></div>
+            <div class="g-step"><div class="g-num">3</div><div class="g-text">Aggiungi una breve descrizione nel campo apposito<div class="g-note">Facoltativo &mdash; puoi anche lasciarlo vuoto</div></div></div>
+            <div class="g-step"><div class="g-num">4</div><div class="g-text">Premi il pulsante rosso <em>&ldquo;REGISTRA SEGNALAZIONE&rdquo;</em></div></div>
+            <div class="g-step"><div class="g-num">5</div><div class="g-text">Una schermata verde conferma il salvataggio con data, ora e posizione</div></div>
+          </div>
+        </div>
+        <div class="guida-section">
+          <div class="guida-head"><div class="guida-hico blue"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div><div class="guida-htitle">GESTIRE LA POSIZIONE</div></div>
+          <div class="guida-body">
+            <div class="g-step"><div class="g-num">1</div><div class="g-text">L&apos;app usa il <em>GPS del telefono</em> in automatico quando disponibile</div></div>
+            <div class="g-step"><div class="g-num">2</div><div class="g-text">Premi <em>&ldquo;Cambia posizione&rdquo;</em>, scrivi il nome del luogo e scegli <em>&ldquo;Salva come predefinita&rdquo;</em></div></div>
+            <div class="g-step"><div class="g-num">3</div><div class="g-text">Se sei in un posto diverso dal solito, scegli <em>&ldquo;Usa solo per questa segnalazione&rdquo;</em><div class="g-note">Dopo l&apos;invio, l&apos;app torna automaticamente alla posizione normale</div></div></div>
+            <div class="g-step"><div class="g-num">4</div><div class="g-text">Premi <em>&ldquo;Cattura GPS&rdquo;</em> nella finestra posizione per rilevare le coordinate precise</div></div>
+          </div>
+        </div>
+        <div class="guida-section">
+          <div class="guida-head"><div class="guida-hico blue"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div><div class="guida-htitle">STORICO E REPORT PDF</div></div>
+          <div class="guida-body">
+            <div class="g-step"><div class="g-num">1</div><div class="g-text">Tocca <em>&ldquo;Storico&rdquo;</em> nella barra in basso per vedere tutte le segnalazioni</div></div>
+            <div class="g-step"><div class="g-num">2</div><div class="g-text">Usa i <em>pulsanti filtro</em> per visualizzare gli ultimi 7 giorni, 30 giorni o tutto l&apos;archivio</div></div>
+            <div class="g-step"><div class="g-num">3</div><div class="g-text">Premi <em>&ldquo;Esporta report PDF&rdquo;</em> per generare un documento stampabile con tabella delle segnalazioni<div class="g-note">Il PDF &egrave; adatto per comunicazioni formali con enti e autorit&agrave;</div></div></div>
+          </div>
+        </div>
+        <div class="guida-section">
+          <div class="guida-head"><div class="guida-hico green"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><div class="guida-htitle">BACKUP DEI DATI</div></div>
+          <div class="guida-body">
+            <div class="g-step"><div class="g-num">1</div><div class="g-text">Tocca <em>&ldquo;Backup&rdquo;</em> nella barra in basso</div></div>
+            <div class="g-step"><div class="g-num">2</div><div class="g-text">Premi <em>&ldquo;Scarica backup dati&rdquo;</em> per salvare tutte le segnalazioni in un file<div class="g-note">Salvalo via email, Google Drive o iCloud per tenerlo al sicuro</div></div></div>
+            <div class="g-step"><div class="g-num">3</div><div class="g-text"><em>Ripeti ogni 7 giorni</em> &mdash; un avviso automatico ti ricorder&agrave; quando &egrave; il momento</div></div>
+            <div class="g-step"><div class="g-num">4</div><div class="g-text">Per recuperare i dati, usa <em>&ldquo;Ripristina da file&rdquo;</em> e seleziona il file salvato</div></div>
+          </div>
+        </div>
+        <div class="guida-section">
+          <div class="guida-head"><div class="guida-hico amber"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><div class="guida-htitle">INSTALLARE SUL TELEFONO</div></div>
+          <div class="guida-body">
+            <div class="os-section">
+              <div style="background:var(--alarm-soft);border:1px solid var(--alarm-border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--alarm);line-height:1.6"><strong>Importante per il GPS:</strong> il rilevamento della posizione funziona solo quando l&apos;app &egrave; pubblicata su un sito web (es. Netlify). Aprendo il file HTML direttamente dal telefono il GPS non funziona &mdash; &egrave; una limitazione di sicurezza di Chrome e Safari.</div>
+<div class="os-label">Android &mdash; Chrome</div>
+              <div class="g-step-mini"><div class="g-num-mini">1</div><div class="g-text-mini">Apri la pagina in Chrome</div></div>
+              <div class="g-step-mini"><div class="g-num-mini">2</div><div class="g-text-mini">Tocca i <em>tre puntini &#8942;</em> in alto a destra</div></div>
+              <div class="g-step-mini"><div class="g-num-mini">3</div><div class="g-text-mini">Seleziona <em>&ldquo;Aggiungi a schermata Home&rdquo;</em></div></div>
+              <div class="g-step-mini"><div class="g-num-mini">4</div><div class="g-text-mini">Conferma con <em>&ldquo;Aggiungi&rdquo;</em></div></div>
+            </div>
+            <div class="os-section">
+              <div class="os-label">iPhone / iPad &mdash; Safari</div>
+              <div class="g-step-mini"><div class="g-num-mini">1</div><div class="g-text-mini">Apri la pagina in <em>Safari</em> (non Chrome)</div></div>
+              <div class="g-step-mini"><div class="g-num-mini">2</div><div class="g-text-mini">Tocca il pulsante <em>Condividi &#8593;</em> in basso al centro</div></div>
+              <div class="g-step-mini"><div class="g-num-mini">3</div><div class="g-text-mini">Scorri e seleziona <em>&ldquo;Aggiungi a schermata Home&rdquo;</em></div></div>
+              <div class="g-step-mini"><div class="g-num-mini">4</div><div class="g-text-mini">Tocca <em>&ldquo;Aggiungi&rdquo;</em> in alto a destra</div></div>
+            </div>
+          </div>
+        </div>
+        <button id="install-btn" class="btn-install" onclick="installPWA()"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Installa l&apos;app su questo dispositivo</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button id="nav-home" class="nav-btn active" onclick="navigateTo('home')"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button id="nav-storico" class="nav-btn" onclick="navigateTo('storico')"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>Storico</button>
+    <button id="nav-backup" class="nav-btn" onclick="navigateTo('backup')"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><div class="nav-badge" id="backup-badge"></div>Backup</button>
+    <button id="nav-istruzioni" class="nav-btn" onclick="navigateTo('istruzioni')"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Guida</button>
+  </nav>
+
+  <div id="success-modal">
+    <div class="succ-check"><svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div class="succ-title">REGISTRATA</div>
+    <div class="succ-divider"></div>
+    <div class="succ-label">Segnalazione salvata</div>
+    <div class="succ-sub" id="success-datetime">&mdash;</div>
+  </div>
+
+  <div id="modal-pos" class="modal-overlay" onclick="overlayClick(event,'modal-pos')">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Modifica posizione</div>
+      <div class="form-group">
+        <label class="form-label">Descrivi il luogo</label>
+        <input type="text" id="pos-label" class="form-input" placeholder="Es. Via Roma 5 &middot; Casa mia &middot; Parco&hellip;" maxlength="120">
+      </div>
+      <button class="btn-gps-capture" onclick="captureGPS()"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>Cattura posizione GPS adesso</button>
+      <div id="gps-status-txt" class="gps-status-txt"></div>
+      <div class="modal-actions">
+        <button class="btn-m-primary" onclick="confirmPosTemp()">Usa solo per questa segnalazione</button>
+        <button class="btn-m-secondary" onclick="confirmPosDefault()">Salva come posizione predefinita</button>
+        <button class="btn-m-cancel" onclick="closeModal('modal-pos')">Annulla</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const DB_KEY='om_data_v1',SET_KEY='om_settings_v1';
+const loadData=()=>{try{return JSON.parse(localStorage.getItem(DB_KEY))||[];}catch{return[];}};
+const saveData=d=>localStorage.setItem(DB_KEY,JSON.stringify(d));
+const loadSettings=()=>{const def={defaultLabel:null,defaultLat:null,defaultLon:null,lastBackup:null};try{return Object.assign(def,JSON.parse(localStorage.getItem(SET_KEY)));}catch{return def;}};
+const saveSettings=s=>localStorage.setItem(SET_KEY,JSON.stringify(s));
+let settings=loadSettings(),currentPos=null,capLat=null,capLon=null,deferredPrompt=null,storicoFilter='all';
+function navigateTo(page){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+page).classList.add('active');document.getElementById('nav-'+page).classList.add('active');if(page==='storico')renderStorico();if(page==='backup')updateBackupUI();}
+function initPosition(){if(settings.defaultLabel){currentPos={label:settings.defaultLabel,lat:settings.defaultLat,lon:settings.defaultLon,isGPS:false,isTemp:false};renderPosDisplay();tryGPS((lat,lon)=>{if(!currentPos||!currentPos.isTemp){currentPos={label:'GPS ('+lat.toFixed(4)+', '+lon.toFixed(4)+')',lat,lon,isGPS:true,isTemp:false};renderPosDisplay();}},()=>{});}else{renderPosDisplay();if(location.protocol!=='file:'){tryGPS((lat,lon)=>{if(!currentPos||!currentPos.isTemp){reverseGeocode(lat,lon,addr=>{currentPos={label:addr,lat,lon,isGPS:true,isTemp:false};renderPosDisplay();},()=>{currentPos={label:'GPS ('+lat.toFixed(4)+', '+lon.toFixed(4)+')',lat,lon,isGPS:true,isTemp:false};renderPosDisplay();});}},()=>{});}}}
+function tryGPS(onOk,onFail){if(!navigator.geolocation){onFail&&onFail(0);return;}navigator.geolocation.getCurrentPosition(p=>onOk&&onOk(p.coords.latitude,p.coords.longitude),err=>{if(err.code===1){onFail&&onFail(1);return;}navigator.geolocation.getCurrentPosition(p=>onOk&&onOk(p.coords.latitude,p.coords.longitude),err2=>onFail&&onFail(err2.code),{timeout:15000,maximumAge:300000,enableHighAccuracy:false});},{timeout:8000,maximumAge:30000,enableHighAccuracy:true});}
+function renderPosDisplay(){const el=document.getElementById('position-display');if(!currentPos){el.innerHTML='<span class="pos-dot none"></span><span style="color:var(--alarm)">Posizione non impostata &mdash; premi &ldquo;Cambia posizione&rdquo;</span>';return;}const dotClass=currentPos.isGPS?'gps':(currentPos.isTemp?'temp':'preset');const badgeLabel=currentPos.isGPS?'GPS':(currentPos.isTemp?'Temporanea':'Predefinita');el.innerHTML='<span class="pos-dot '+dotClass+'"></span><span style="flex:1">'+currentPos.label+'</span><span class="pos-badge '+dotClass+'">'+badgeLabel+'</span>';}
+function openChangePosition(){document.getElementById('pos-label').value='';document.getElementById('gps-status-txt').textContent='';capLat=null;capLon=null;document.getElementById('modal-pos').classList.add('show');}
+function reverseGeocode(lat,lon,onOk,onFail){fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json&accept-language=it',{headers:{'Accept-Language':'it'}}).then(r=>r.json()).then(d=>{const a=d.address||{};const parts=[];if(a.road){parts.push(a.road+(a.house_number?' '+a.house_number:''));}if(a.village||a.town||a.city||a.municipality){parts.push(a.village||a.town||a.city||a.municipality);}if(a.county||a.state){parts.push(a.county||a.state);}onOk(parts.length?parts.join(', '):d.display_name.split(',').slice(0,3).join(',').trim());}).catch(()=>onFail());}
+function captureGPS(){const st=document.getElementById('gps-status-txt');st.style.color='';if(location.protocol==='file:'){st.textContent='GPS non disponibile su file locale. Pubblica l\u2019app su un sito web (es. Netlify) per usare il GPS.';st.style.color='var(--alarm)';return;}st.textContent='Rilevamento GPS in corso\u2026';const errMsg={0:'GPS non supportato da questo browser.',1:'Permesso negato. Vai in Impostazioni \u2192 App \u2192 Chrome \u2192 Autorizzazioni \u2192 Posizione.',2:'Segnale GPS assente. Prova all\u2019aperto o inserisci il luogo a mano.',3:'Rilevamento troppo lento. Riprova o inserisci il luogo a mano.'};tryGPS((lat,lon)=>{capLat=lat;capLon=lon;st.textContent='Coordinate rilevate, ricerca indirizzo\u2026';st.style.color='';reverseGeocode(lat,lon,addr=>{st.textContent='\u2713 '+addr;st.style.color='var(--success)';document.getElementById('pos-label').value=addr;},()=>{st.textContent='\u2713 '+lat.toFixed(5)+', '+lon.toFixed(5);st.style.color='var(--success)';if(!document.getElementById('pos-label').value.trim())document.getElementById('pos-label').value='GPS ('+lat.toFixed(4)+', '+lon.toFixed(4)+')';});},code=>{st.textContent=errMsg[code]||'GPS non disponibile.';st.style.color='var(--alarm)';});}
+function confirmPosTemp(){const label=document.getElementById('pos-label').value.trim();if(!label){alert('Inserisci una descrizione del luogo.');return;}currentPos={label,lat:capLat,lon:capLon,isGPS:!!capLat,isTemp:true};renderPosDisplay();closeModal('modal-pos');}
+function confirmPosDefault(){const label=document.getElementById('pos-label').value.trim();if(!label){alert('Inserisci una descrizione del luogo.');return;}settings.defaultLabel=label;settings.defaultLat=capLat;settings.defaultLon=capLon;saveSettings(settings);currentPos={label,lat:capLat,lon:capLon,isGPS:!!capLat,isTemp:false};renderPosDisplay();closeModal('modal-pos');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function overlayClick(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+function segnalaOdore(){const note=document.getElementById('note-input').value.trim();const now=new Date();const seg={id:now.getTime(),timestamp:now.toISOString(),lat:currentPos?.lat??null,lon:currentPos?.lon??null,positionLabel:currentPos?.label??'Posizione non disponibile',isGPS:currentPos?.isGPS??false,note};const data=loadData();data.unshift(seg);saveData(data);if(currentPos?.isTemp){currentPos=settings.defaultLabel?{label:settings.defaultLabel,lat:settings.defaultLat,lon:settings.defaultLon,isGPS:false,isTemp:false}:null;renderPosDisplay();}document.getElementById('note-input').value='';updateLastReport();showSuccess(now);}
+function updateLastReport(){const data=loadData();if(!data.length){document.getElementById('last-report-main').textContent='Nessuna segnalazione';document.getElementById('last-report-sub').textContent='Le segnalazioni appariranno qui';return;}const s=data[0],d=new Date(s.timestamp);const isToday=new Date().toDateString()===d.toDateString();const dStr=isToday?'Oggi':d.toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});const tStr=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});document.getElementById('last-report-main').textContent=dStr+' \u2014 '+tStr;document.getElementById('last-report-sub').textContent=s.positionLabel;}
+function showSuccess(date){const dStr=date.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});const tStr=date.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});document.getElementById('success-datetime').textContent=dStr+', '+tStr;const m=document.getElementById('success-modal');m.classList.add('show');setTimeout(()=>m.classList.remove('show'),2400);}
+function getFiltered(){const data=loadData(),now=Date.now();if(storicoFilter==='7')return data.filter(s=>now-new Date(s.timestamp).getTime()<=7*86400000);if(storicoFilter==='30')return data.filter(s=>now-new Date(s.timestamp).getTime()<=30*86400000);return data;}
+function renderStorico(){const f=getFiltered();document.getElementById('storico-count').textContent=f.length+' segnalazion'+(f.length===1?'e':'i');const list=document.getElementById('storico-list');if(!f.length){list.innerHTML='<div class="empty-state"><svg class="empty-icon" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><div class="empty-txt">Nessuna segnalazione nel periodo</div><div class="empty-txt2">Modifica il filtro o aggiungi nuove segnalazioni</div></div>';return;}list.innerHTML=f.map(s=>{const d=new Date(s.timestamp);const wday=d.toLocaleDateString('it-IT',{weekday:'long'});const dnum=d.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'});const t=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});return'<div class="report-card"><div class="rc-head"><div><div class="rc-date">'+wday+'</div><div class="rc-datenum">'+dnum+'</div></div><div class="rc-time">'+t+'</div></div><div class="rc-body"><div class="rc-pos"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>'+s.positionLabel+'</div>'+(s.note?'<div class="rc-note">'+s.note+'</div>':'')+'<div style="overflow:hidden"><button class="rc-del" onclick="deleteReport('+s.id+')"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Elimina</button></div></div></div>';}).join('');}
+function setFilter(f){storicoFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));document.getElementById('filter-'+f).classList.add('active');renderStorico();}
+function deleteReport(id){if(!confirm('Eliminare questa segnalazione?'))return;saveData(loadData().filter(s=>s.id!==id));renderStorico();}
+function exportPDF(){if(!window.jspdf){alert('La libreria PDF non \u00e8 ancora caricata. Riprova tra qualche secondo.');return;}const{jsPDF}=window.jspdf;const filtered=getFiltered();const now=new Date();const pm={'7':'Ultimi 7 giorni','30':'Ultimi 30 giorni','all':'Archivio completo'};const periodo=pm[storicoFilter];const doc=new jsPDF('p','mm','a4');const W=210;doc.setFillColor(26,45,78);doc.rect(0,0,W,52,'F');doc.setFillColor(36,85,184);doc.rect(0,52,W,2.5,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('REPORT SEGNALAZIONI ODORI',16,20);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(180,200,230);doc.text('Monitoraggio ambientale \u2014 Monitoraggio ambientale cittadino',16,30);doc.setFontSize(9);doc.setTextColor(140,170,210);doc.text('Periodo: '+periodo,16,40);doc.text('Generato: '+now.toLocaleDateString('it-IT')+' alle '+now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),16,47);doc.setFillColor(245,248,252);doc.rect(0,57,W,16,'F');doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26,45,78);doc.text('Totale segnalazioni nel periodo: '+filtered.length,16,67);if(!filtered.length){doc.setTextColor(150,160,175);doc.setFont('helvetica','italic');doc.setFontSize(12);doc.text('Nessuna segnalazione disponibile per il periodo selezionato.',W/2,110,{align:'center'});}else{const rows=filtered.map(s=>{const d=new Date(s.timestamp);return[d.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}),d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}),s.positionLabel||'\u2014',s.note||'\u2014'];});doc.autoTable({startY:78,head:[['Data','Ora','Posizione','Note']],body:rows,headStyles:{fillColor:[26,45,78],textColor:[255,255,255],fontStyle:'bold',fontSize:9,cellPadding:5},bodyStyles:{fontSize:8.5,textColor:[40,55,75],cellPadding:4.5},alternateRowStyles:{fillColor:[247,250,254]},columnStyles:{0:{cellWidth:38},1:{cellWidth:16},2:{cellWidth:76},3:{cellWidth:'auto'}},margin:{left:16,right:16},tableLineColor:[220,228,240],tableLineWidth:0.25,didDrawPage:(d)=>{doc.setFillColor(247,249,252);doc.rect(0,284,W,13,'F');doc.setDrawColor(220,228,240);doc.line(0,284,W,284);doc.setTextColor(160,170,185);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.text('Segnalazione Odori — Monitoraggio Ambientale Cittadino — Documento generato automaticamente',16,292);doc.text('Pag. '+d.pageNumber,W-16,292,{align:'right'});}});}const fname='report-odori-'+(storicoFilter==='all'?'archivio':storicoFilter+'gg')+'-'+now.toISOString().slice(0,10)+'.pdf';doc.save(fname);}
+function downloadBackup(){const data=loadData(),s=loadSettings();const payload={app:'Segnalazione Odori',version:'2.0',exportDate:new Date().toISOString(),totalRecords:data.length,segnalazioni:data,settings:s};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='backup-segnalazione-odori-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);settings.lastBackup=new Date().toISOString();saveSettings(settings);updateBackupUI();document.getElementById('backup-badge').classList.remove('show');document.getElementById('backup-reminder').classList.remove('show');}
+function restoreBackup(ev){const file=ev.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const b=JSON.parse(e.target.result);if(!Array.isArray(b.segnalazioni))throw new Error('');if(!confirm('Ripristinare '+b.segnalazioni.length+' segnalazioni?\n\nAttenzione: i dati attuali verranno sostituiti.'))return;saveData(b.segnalazioni);if(b.settings){settings=Object.assign(loadSettings(),b.settings);saveSettings(settings);initPosition();}updateBackupUI();updateLastReport();alert('Ripristino completato.\n'+b.segnalazioni.length+' segnalazioni recuperate.');}catch{alert('File non valido. Utilizza solo file di backup scaricati da questa app.');}};reader.readAsText(file);ev.target.value='';}
+function updateBackupUI(){const s=loadSettings(),data=loadData(),now=Date.now();const hdr=document.getElementById('backup-status-header');const lbEl=document.getElementById('last-backup-date');if(s.lastBackup){const lb=new Date(s.lastBackup),days=(now-lb.getTime())/86400000;lbEl.textContent=lb.toLocaleDateString('it-IT')+' \u2014 '+lb.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});lbEl.className='info-val '+(days>=7?'alarm':'ok');hdr.className='status-header '+(days>=7?'alarm':'ok');hdr.textContent=days>=7?'Backup scaduto \u2014 esegui subito':'Backup aggiornato';}else{lbEl.textContent='Mai eseguito';lbEl.className='info-val alarm';hdr.className='status-header alarm';hdr.textContent='Nessun backup eseguito';}document.getElementById('total-reports').textContent=data.length;if(data.length){document.getElementById('first-report-date').textContent=new Date(data[data.length-1].timestamp).toLocaleDateString('it-IT');const last=new Date(data[0].timestamp);document.getElementById('last-report-date-stat').textContent=last.toLocaleDateString('it-IT')+' '+last.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}else{document.getElementById('first-report-date').textContent='\u2014';document.getElementById('last-report-date-stat').textContent='\u2014';}const c30=now-30*86400000,c7=now-7*86400000;const today=new Date();today.setHours(0,0,0,0);document.getElementById('stat-total').textContent=data.length;document.getElementById('stat-last30').textContent=data.filter(s=>new Date(s.timestamp).getTime()>=c30).length;document.getElementById('stat-last7').textContent=data.filter(s=>new Date(s.timestamp).getTime()>=c7).length;document.getElementById('stat-today').textContent=data.filter(s=>new Date(s.timestamp)>=today).length;}
+function checkBackupReminder(){const s=loadSettings(),data=loadData();if(!data.length)return;const needs=!s.lastBackup||(Date.now()-new Date(s.lastBackup).getTime()>=7*86400000);if(needs){document.getElementById('backup-reminder').classList.add('show');document.getElementById('backup-badge').classList.add('show');}}
+function dismissReminder(){document.getElementById('backup-reminder').classList.remove('show');}
+function deleteAllData(){const data=loadData();if(!data.length){alert('Non ci sono dati da eliminare.');return;}if(!confirm('Eliminare definitivamente '+data.length+' segnalazioni?\n\nQuesta operazione non \u00e8 reversibile. Si consiglia di scaricare un backup prima di procedere.'))return;if(!confirm('Conferma definitiva: eliminare tutti i dati?'))return;localStorage.removeItem(DB_KEY);updateBackupUI();updateLastReport();alert('Tutti i dati sono stati eliminati.');}
+function setupPWA(){try{const m={name:'Segnalazione Odori',short_name:'Odori',description:'Segnalazione Odori — Monitoraggio Ambientale',start_url:'./',display:'standalone',background_color:'#eef2f7',theme_color:'#1a2d4e',orientation:'portrait-primary',icons:[]};document.getElementById('pwa-manifest').href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}));}catch(e){}window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;const btn=document.getElementById('install-btn');if(btn)btn.style.display='flex';});}
+function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;const b=document.getElementById('install-btn');if(b)b.style.display='none';});}
+function tick(){const now=new Date();const te=document.getElementById('current-time');const de=document.getElementById('current-date');if(te)te.textContent=now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});if(de)de.textContent=now.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});}
+window.addEventListener('load',()=>{settings=loadSettings();setupPWA();initPosition();tick();setInterval(tick,30000);updateLastReport();updateBackupUI();checkBackupReminder();});
+</script>
+</body>
+</html>
