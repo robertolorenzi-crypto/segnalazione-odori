@@ -212,13 +212,13 @@ input[type="file"]{display:none}
       <span class="app-icon">&#128067;</span>
       <div><div class="app-name">SEGNALA ODORI</div><div class="app-sub">Monitoraggio odori zona</div></div>
     </div>
-    <div class="live-badge"><span class="live-dot"></span>ATTIVA</div>
+    <button onclick="openGuida()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:34px;height:34px;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;">?</button>
   </div>
   <div class="backup-banner" id="backupBanner">
     <span class="bb-ico">&#128190;</span>
     <div class="bb-txt">Backup consigliato!<span>Non fai un backup da 7+ giorni.</span></div>
     <div class="bb-actions">
-      <button class="bb-go" onclick="goTab('backup')">Backup</button>
+      <button class="bb-go" onclick="goTab('config')">Backup</button>
       <button class="bb-close" onclick="dismissBanner()">&#x2715;</button>
     </div>
   </div>
@@ -226,7 +226,6 @@ input[type="file"]{display:none}
     <button class="tab active" onclick="goTab('home',this)"><span class="ti">&#127968;</span>Home</button>
     <button class="tab" onclick="goTab('storico',this)"><span class="ti">&#128203;</span>Storico</button>
     <button class="tab" onclick="goTab('invia',this)"><span class="ti">&#128232;</span>Invia</button>
-    <button class="tab" onclick="goTab('backup',this)"><span class="ti">&#128190;</span>Backup</button>
     <button class="tab" onclick="goTab('config',this)"><span class="ti">&#9881;&#65039;</span>Config</button>
   </div>
   <div class="content">
@@ -281,7 +280,7 @@ input[type="file"]{display:none}
               <div class="periodo-opt" id="po30" onclick="selPeriodo('30')"><div class="po-num" id="pn30">0</div><div class="po-lbl">30 giorni</div></div>
               <div class="periodo-opt" id="poAll" onclick="selPeriodo('tutti')"><div class="po-num" id="pnAll">0</div><div class="po-lbl">Tutte</div></div>
             </div>
-            <button class="btn-full btn-blue" onclick="generaPDFInvia()">&#128229; Scarica PDF (fallback)</button>
+
           </div>
         </div>
         <div class="invia-card">
@@ -291,34 +290,8 @@ input[type="file"]{display:none}
         <div class="info-box"><span>&#128161;</span><div>Premi <strong>CONDIVIDI REPORT</strong>: si apre il pannello del telefono con il PDF gia' allegato. Scegli Email, poi incolla il testo dell'email che verra' copiato automaticamente.</div></div>
         <button class="btn-full btn-primary-full" style="font-family:var(--fd);font-size:22px;letter-spacing:.5px;" onclick="condividiReport()">&#128228; CONDIVIDI REPORT PDF</button>
         <button class="btn-full btn-surface" style="margin-top:-4px;font-size:13px;" onclick="apriEmail()">&#128232; Solo testo email (senza allegato)</button>
+        <button class="btn-full btn-surface" style="margin-top:-4px;font-size:12px;color:var(--text3);" onclick="generaPDFInvia()">&#128229; Scarica solo PDF</button>
         <div class="info-box"><span>&#8505;&#65039;</span><div>Gestisci i destinatari dalla scheda <strong>&#9881;&#65039; Config</strong>.</div></div>
-      </div>
-    </div>
-    <div class="page" id="page-backup">
-      <div class="backup-page">
-        <div class="stat-row">
-          <div class="stat-box"><div class="stat-num" id="statTot">0</div><div class="stat-lbl">Totale segnalazioni</div></div>
-          <div class="stat-box"><div class="stat-num" id="statOggi">0</div><div class="stat-lbl">Segnalazioni oggi</div></div>
-        </div>
-        <div class="invia-card">
-          <div class="card-header"><span class="card-ico">&#128190;</span><div><div class="card-title">Salva backup</div><div class="card-sub">Scarica i tuoi dati</div></div></div>
-          <div class="card-body">
-            <button class="btn-full btn-blue" onclick="esportaBackup()">&#128190; Backup JSON</button>
-            <button class="btn-full btn-green" onclick="esportaCSV()">&#128202; Esporta CSV (Excel)</button>
-          </div>
-          <div class="backup-info" id="ultimoBackup">Ultimo backup: mai effettuato</div>
-        </div>
-        <div class="invia-card">
-          <div class="card-header"><span class="card-ico">&#128194;</span><div><div class="card-title">Ripristina</div><div class="card-sub">Carica un backup precedente</div></div></div>
-          <div class="card-body">
-            <button class="btn-full btn-surface" onclick="document.getElementById('fileInput').click()">&#128194; Carica file backup (.json)</button>
-            <input type="file" id="fileInput" accept=".json" onchange="ripristinaBackup(this)">
-          </div>
-        </div>
-        <div class="invia-card">
-          <div class="card-header"><span class="card-ico">&#128465;&#65039;</span><div><div class="card-title">Cancella dati</div><div class="card-sub">Elimina tutte le segnalazioni</div></div></div>
-          <div class="card-body"><button class="btn-full btn-danger-full" onclick="openModal('modalClear')">&#128465;&#65039; Cancella tutto</button></div>
-        </div>
       </div>
     </div>
     <div class="page" id="page-config">
@@ -355,7 +328,32 @@ input[type="file"]{display:none}
         <div class="config-section" style="margin-top:8px">&#128232; Destinatari email</div>
         <div class="dest-manage" id="destManageList"></div>
         <button class="btn-full btn-surface" style="margin-top:4px" onclick="openModal('modalAddDest')">&#10133; Aggiungi destinatario</button>
-        <button class="btn-full btn-primary-full" style="margin-top:8px;font-family:var(--fd);font-size:20px;letter-spacing:.5px;" onclick="salvaConfig()">SALVA CONFIGURAZIONE</button>
+
+        <div class="config-section" style="margin-top:8px">&#128190; Backup e dati</div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-num" id="statTot">0</div><div class="stat-lbl">Totale segnalazioni</div></div>
+          <div class="stat-box"><div class="stat-num" id="statOggi">0</div><div class="stat-lbl">Segnalazioni oggi</div></div>
+        </div>
+        <div class="invia-card">
+          <div class="card-header"><span class="card-ico">&#128190;</span><div><div class="card-title">Salva backup</div><div class="card-sub">Scarica i tuoi dati</div></div></div>
+          <div class="card-body">
+            <button class="btn-full btn-blue" onclick="esportaBackup()">&#128190; Backup JSON</button>
+            <button class="btn-full btn-green" onclick="esportaCSV()">&#128202; Esporta CSV (Excel)</button>
+          </div>
+          <div class="backup-info" id="ultimoBackup">Ultimo backup: mai effettuato</div>
+        </div>
+        <div class="invia-card">
+          <div class="card-header"><span class="card-ico">&#128194;</span><div><div class="card-title">Ripristina</div><div class="card-sub">Carica un backup precedente</div></div></div>
+          <div class="card-body">
+            <button class="btn-full btn-surface" onclick="document.getElementById('fileInput').click()">&#128194; Carica file backup (.json)</button>
+            <input type="file" id="fileInput" accept=".json" onchange="ripristinaBackup(this)">
+          </div>
+        </div>
+        <div class="invia-card">
+          <div class="card-header"><span class="card-ico">&#128465;&#65039;</span><div><div class="card-title">Cancella dati</div><div class="card-sub">Elimina tutte le segnalazioni</div></div></div>
+          <div class="card-body"><button class="btn-full btn-danger-full" onclick="openModal('modalClear')">&#128465;&#65039; Cancella tutto</button></div>
+        </div>
+        <button class="btn-full btn-primary-full" style="margin-top:12px;font-family:var(--fd);font-size:20px;letter-spacing:.5px;" onclick="salvaConfig()">SALVA CONFIGURAZIONE</button>
         <div style="height:8px"></div>
       </div>
     </div>
@@ -655,40 +653,46 @@ function generaPDFInvia(){
 
 async function condividiReport(){
   if(!config){showToast('Configura prima i dati in Config',true);return;}
-  const dest=(config.destinatari||[]).filter(d=>d.attivo);
   const f=filterSegnalazioni(periodoInvia);
   if(!f.length){showToast('Nessuna segnalazione nel periodo',true);return;}
 
-  // Prepara il testo email e copialo negli appunti
-  const testoEmail=costruisciTestoEmail(f);
-  try{await navigator.clipboard.writeText(testoEmail);}catch(e){}
-
-  // Genera PDF come blob
+  // Genera PDF e testo in modo sincrono (prima di qualsiasi await)
   const blob=generaPDFBlob(f,periodoInvia);
   const fileName='report-odori-'+formatDataFile()+'-'+getNextVersion()+'.pdf';
-  const pdfFile=new File([blob],fileName,{type:'application/pdf'});
+  const testoEmail=costruisciTestoEmail(f);
 
-  // Prova Web Share API con file
-  if(navigator.canShare&&navigator.canShare({files:[pdfFile]})){
+  // Tenta condivisione con file (Web Share API livello 2)
+  if(navigator.share){
+    const pdfFile=new File([blob],fileName,{type:'application/pdf'});
+    const canShareFile=navigator.canShare&&navigator.canShare({files:[pdfFile]});
+    // Copia testo negli appunti senza await (fire-and-forget) per non perdere il gesto utente
+    navigator.clipboard.writeText(testoEmail).catch(()=>{});
     try{
-      await navigator.share({
-        title:'Segnalazione odori molesti - '+formatData(new Date()),
-        text:'Report allegato. Testo email copiato negli appunti: incollalo nel campo messaggio.',
-        files:[pdfFile]
-      });
-      return;
+      if(canShareFile){
+        await navigator.share({files:[pdfFile],title:'Segnalazione odori - '+formatData(new Date())});
+        showToast('PDF condiviso! Testo copiato negli appunti');
+      }else{
+        // Dispositivo supporta share ma non file — condividi testo
+        await navigator.share({title:'Segnalazione odori - '+formatData(new Date()),text:testoEmail});
+        showToast('Testo condiviso — allega il PDF separatamente');
+        scaricaBlob(blob,fileName);
+      }
     }catch(e){
-      if(e.name==='AbortError')return; // utente ha chiuso il pannello
-      // fallthrough al download
+      if(e.name==='AbortError')return; // utente ha chiuso il pannello, ok
+      // Errore reale: fallback download
+      scaricaBlob(blob,fileName);
+      showToast('Errore condivisione: PDF scaricato');
     }
+  }else{
+    // Browser non supporta Web Share (es. desktop)
+    scaricaBlob(blob,fileName);
+    navigator.clipboard.writeText(testoEmail).catch(()=>{});
+    showToast('Web Share non disponibile: PDF scaricato');
+    setTimeout(()=>apriEmail(),800);
   }
-  // Fallback: scarica il PDF
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=fileName;a.click();
-  showToast('Web Share non disponibile: PDF scaricato');
-  // Prova comunque ad aprire il mailto
-  setTimeout(()=>apriEmail(),800);
 }
+
+function scaricaBlob(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
 
 function costruisciTestoEmail(filtered){
   if(!config)return '';
@@ -763,6 +767,7 @@ function ripristinaBackup(input){
 }
 function cancellatutto(){segnalazioni=[];salvaDati();aggiornaUI();closeModal('modalClear');showToast('Dati cancellati');}
 function aggiornaUltimoBackup(){const el=document.getElementById('ultimoBackup');if(!el)return;const ub=localStorage.getItem('odori_ultimo_backup');el.textContent=ub?'Ultimo backup: '+formatData(new Date(ub))+' ore '+formatOra(new Date(ub)):'Ultimo backup: mai effettuato';}
+function aggiornaStatConfig(){const oggi=formatData(new Date());const st=document.getElementById('statTot');const so=document.getElementById('statOggi');if(st)st.textContent=segnalazioni.length;if(so)so.textContent=segnalazioni.filter(s=>s.data===oggi).length;}
 function checkBackupBanner(){const ub=localStorage.getItem('odori_ultimo_backup');if(!ub&&segnalazioni.length>0){document.getElementById('backupBanner').classList.add('show');return;}if(ub&&(Date.now()-new Date(ub).getTime())/86400000>=7)document.getElementById('backupBanner').classList.add('show');}
 function dismissBanner(){document.getElementById('backupBanner').classList.remove('show');}
 function goTab(id,el){
@@ -771,19 +776,238 @@ function goTab(id,el){
   document.getElementById('page-'+id).classList.add('active');
   if(el){el.classList.add('active');}else{const tabs=document.querySelectorAll('.tab');const map={home:0,storico:1,invia:2,backup:3,config:4};if(map[id]!==undefined)tabs[map[id]].classList.add('active');}
   if(id==='storico')renderLista(filtroCorrente);
-  if(id==='backup')aggiornaUltimoBackup();
   if(id==='invia'){aggiornaCountsInvia();renderInviaDestList();}
-  if(id==='config')populaConfig();
+  if(id==='config'){populaConfig();aggiornaUltimoBackup();aggiornaStatConfig();}
 }
 function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');});});
 function showToast(msg,error=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(error?' error':'')+' show';setTimeout(()=>t.classList.remove('show'),3000);}
+function openGuida(){document.getElementById('guidaOverlay').style.display='flex';}
+function closeGuida(){document.getElementById('guidaOverlay').style.display='none';}
 function formatData(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
 function formatOra(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function formatDataFile(){const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
 function getNextVersion(){let v=parseInt(localStorage.getItem('odori_file_version')||'1');localStorage.setItem('odori_file_version',v+1);return 'v'+v;}
 function scaricaFile(content,filename,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=filename;a.click();}
 </script>
+
+<!-- GUIDA -->
+<div id="guidaOverlay" style="display:none;position:fixed;inset:0;z-index:600;background:var(--bg);flex-direction:column;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,var(--navy-d),var(--navy));padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div>
+      <div style="font-family:var(--fd);font-size:22px;font-weight:900;color:#fff;letter-spacing:1px;">&#10067; GUIDA ALL'USO</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;">Semplice, passo per passo</div>
+    </div>
+    <button onclick="closeGuida()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:36px;height:36px;color:#fff;font-size:20px;cursor:pointer;">&#x2715;</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+
+    <!-- STEP 1: Installazione -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e3a5f,#0f2440);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <div style="width:30px;height:30px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:18px;font-weight:900;color:#fff;flex-shrink:0;">1</div>
+        <div style="font-family:var(--fd);font-size:17px;font-weight:900;color:#fff;">Installa l'app sul telefono</div>
+      </div>
+      <div style="padding:14px 16px;">
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;"><strong style="color:var(--text)">iPhone:</strong> apri questa pagina in Safari &#8594; premi il tasto &#x1F4E4; in basso &#8594; scegli <em>"Aggiungi alla schermata Home"</em>.<br><br><strong style="color:var(--text)">Android:</strong> apri in Chrome &#8594; apparir&#224; un banner in basso "Aggiungi alla schermata" &#8594; premi Installa. Se non appare, premi i 3 puntini &#8942; in alto &#8594; "Aggiungi alla schermata Home".</p>
+        <!-- Mockup installazione -->
+        <svg viewBox="0 0 300 110" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:10px;">
+          <rect width="300" height="110" fill="#1e293b" rx="8"/>
+          <!-- iPhone mockup -->
+          <rect x="20" y="10" width="120" height="90" rx="10" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+          <rect x="26" y="18" width="108" height="75" rx="4" fill="#1e3a5f"/>
+          <text x="80" y="42" text-anchor="middle" font-size="8" fill="#94a3b8" font-family="sans-serif">Safari</text>
+          <rect x="35" y="48" width="90" height="14" rx="3" fill="#273549"/>
+          <text x="80" y="59" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">segnala-odori.github.io</text>
+          <rect x="55" y="70" width="50" height="14" rx="3" fill="#f97316"/>
+          <text x="80" y="80" text-anchor="middle" font-size="7" fill="white" font-family="sans-serif">&#x1F4E4; Condividi</text>
+          <circle cx="80" cy="100" r="4" fill="#334155"/>
+          <!-- Freccia -->
+          <text x="155" y="60" text-anchor="middle" font-size="18" fill="#f97316">&#8594;</text>
+          <!-- Risultato: icona sulla home -->
+          <rect x="170" y="10" width="110" height="90" rx="10" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+          <rect x="176" y="18" width="98" height="75" rx="4" fill="#0f172a"/>
+          <rect x="200" y="30" width="40" height="40" rx="10" fill="#1e3a5f" stroke="#f97316" stroke-width="1.5"/>
+          <text x="220" y="57" text-anchor="middle" font-size="16">&#128067;</text>
+          <text x="220" y="76" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">Segnala Odori</text>
+          <circle cx="225" cy="100" r="4" fill="#334155"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- STEP 2: Prima configurazione -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e3a5f,#0f2440);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <div style="width:30px;height:30px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:18px;font-weight:900;color:#fff;flex-shrink:0;">2</div>
+        <div style="font-family:var(--fd);font-size:17px;font-weight:900;color:#fff;">Prima configurazione</div>
+      </div>
+      <div style="padding:14px 16px;">
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;">La prima volta che apri l'app parte una <strong style="color:var(--text)">procedura guidata in 4 passi</strong>. Segui le schermate: inserisci nome e cognome, seleziona il tuo comune (l'email si compila da sola), scegli a quali enti inviare le segnalazioni.</p>
+        <!-- Mockup onboarding -->
+        <svg viewBox="0 0 300 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:10px;">
+          <rect width="300" height="130" fill="#0f172a" rx="8"/>
+          <!-- Header onboarding -->
+          <rect x="10" y="10" width="280" height="40" rx="6" fill="#1e3a5f"/>
+          <!-- Step dots -->
+          <rect x="20" y="18" width="55" height="4" rx="2" fill="#f97316"/>
+          <rect x="82" y="18" width="55" height="4" rx="2" fill="rgba(255,255,255,.2)"/>
+          <rect x="144" y="18" width="55" height="4" rx="2" fill="rgba(255,255,255,.2)"/>
+          <rect x="206" y="18" width="55" height="4" rx="2" fill="rgba(255,255,255,.2)"/>
+          <text x="20" y="36" font-size="11" fill="white" font-family="sans-serif" font-weight="bold">&#128075; Chi sei?</text>
+          <text x="20" y="46" font-size="8" fill="rgba(255,255,255,.5)" font-family="sans-serif">I tuoi dati per le email</text>
+          <!-- Campi -->
+          <rect x="10" y="56" width="135" height="18" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="18" y="68" font-size="8" fill="#64748b" font-family="sans-serif">Nome *</text>
+          <rect x="155" y="56" width="135" height="18" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="163" y="68" font-size="8" fill="#64748b" font-family="sans-serif">Cognome *</text>
+          <rect x="10" y="80" width="280" height="18" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="18" y="92" font-size="8" fill="#64748b" font-family="sans-serif">La tua email (mittente)</text>
+          <!-- Pulsante avanti -->
+          <rect x="10" y="105" width="280" height="18" rx="6" fill="#f97316"/>
+          <text x="150" y="117" text-anchor="middle" font-size="9" fill="white" font-family="sans-serif" font-weight="bold">AVANTI &#8594;</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- STEP 3: Segnalare un odore -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e3a5f,#0f2440);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <div style="width:30px;height:30px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:18px;font-weight:900;color:#fff;flex-shrink:0;">3</div>
+        <div style="font-family:var(--fd);font-size:17px;font-weight:900;color:#fff;">Segnalare un odore</div>
+      </div>
+      <div style="padding:14px 16px;">
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Quando senti un odore molesto: apri l'app e premi il grande pulsante arancione. L'app salva subito <strong style="color:var(--text)">data, ora e posizione</strong>. Puoi aggiungere una nota prima di premere (es: "odore acre, viene da nord").</p>
+        <!-- Mockup Home -->
+        <svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:10px;">
+          <rect width="300" height="150" fill="#0f172a" rx="8"/>
+          <!-- App bar -->
+          <rect x="0" y="0" width="300" height="30" rx="0" fill="#1e3a5f"/>
+          <text x="15" y="20" font-size="12" fill="white" font-family="sans-serif" font-weight="bold">&#128067; SEGNALA ODORI</text>
+          <!-- Counter -->
+          <text x="150" y="55" text-anchor="middle" font-size="28" fill="#f97316" font-family="sans-serif" font-weight="bold">12</text>
+          <text x="150" y="68" text-anchor="middle" font-size="8" fill="#94a3b8" font-family="sans-serif">segnalazioni totali</text>
+          <!-- Pulsante segnala -->
+          <rect x="15" y="76" width="270" height="38" rx="8" fill="#f97316"/>
+          <text x="47" y="98" font-size="14">&#128680;</text>
+          <text x="150" y="101" text-anchor="middle" font-size="13" fill="white" font-family="sans-serif" font-weight="bold">SEGNALA ODORE ORA</text>
+          <!-- Card posizione -->
+          <rect x="15" y="120" width="270" height="24" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="25" y="136" font-size="10">&#128205;</text>
+          <text x="42" y="136" font-size="8" fill="#94a3b8" font-family="sans-serif">Via Roma 5, Bagnatica (BG)</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- STEP 4: GPS -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e3a5f,#0f2440);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <div style="width:30px;height:30px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:18px;font-weight:900;color:#fff;flex-shrink:0;">4</div>
+        <div style="font-family:var(--fd);font-size:17px;font-weight:900;color:#fff;">Cambiare posizione</div>
+      </div>
+      <div style="padding:14px 16px;">
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Nella scheda <strong style="color:var(--text)">Home</strong> trovi 3 pulsanti sotto la posizione attiva:</p>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">&#128225;</span><div><div style="font-size:13px;font-weight:700;color:var(--text)">GPS</div><div style="font-size:12px;color:var(--text2);">Rileva automaticamente dove sei. Il telefono chiede il permesso la prima volta — digli S&#236;.</div></div></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">&#9998;&#65039;</span><div><div style="font-size:13px;font-weight:700;color:var(--text)">Manuale</div><div style="font-size:12px;color:var(--text2);">Scrivi tu l'indirizzo a mano. Utile se sei in un posto diverso dal solito.</div></div></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">&#127968;</span><div><div style="font-size:13px;font-weight:700;color:var(--text)">Default</div><div style="font-size:12px;color:var(--text2);">Torna all'indirizzo di casa che hai impostato nella configurazione.</div></div></div>
+        </div>
+        <svg viewBox="0 0 300 50" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:8px;">
+          <rect width="300" height="50" fill="#1e293b" rx="6" stroke="#334155" stroke-width="1"/>
+          <rect x="8" y="10" width="86" height="30" rx="6" fill="rgba(249,115,22,.15)" stroke="rgba(249,115,22,.4)" stroke-width="1"/>
+          <text x="51" y="29" text-anchor="middle" font-size="9" fill="#f97316" font-family="sans-serif" font-weight="bold">&#128225; GPS</text>
+          <rect x="107" y="10" width="86" height="30" rx="6" fill="#273549" stroke="#334155" stroke-width="1"/>
+          <text x="150" y="29" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="sans-serif" font-weight="bold">&#9998; Manuale</text>
+          <rect x="206" y="10" width="86" height="30" rx="6" fill="#273549" stroke="#334155" stroke-width="1"/>
+          <text x="249" y="29" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="sans-serif" font-weight="bold">&#127968; Default</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- STEP 5: Storico -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e3a5f,#0f2440);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <div style="width:30px;height:30px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:18px;font-weight:900;color:#fff;flex-shrink:0;">5</div>
+        <div style="font-family:var(--fd);font-size:17px;font-weight:900;color:#fff;">Vedere lo storico</div>
+      </div>
+      <div style="padding:14px 16px;">
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Premi <strong style="color:var(--text)">&#128203; Storico</strong> in basso per vedere tutte le segnalazioni. Usa i filtri per vedere solo quelle di oggi, degli ultimi 7 o 30 giorni. Il pulsante <strong style="color:#dc2626)">PDF</strong> in alto a destra esporta un report stampabile.</p>
+        <svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:10px;">
+          <rect width="300" height="120" fill="#0f172a" rx="8"/>
+          <rect x="0" y="0" width="300" height="28" fill="#1e3a5f"/>
+          <text x="15" y="18" font-size="11" fill="white" font-family="sans-serif" font-weight="bold">&#128203; STORICO</text>
+          <rect x="230" y="6" width="55" height="16" rx="5" fill="#dc2626"/>
+          <text x="257" y="17" text-anchor="middle" font-size="8" fill="white" font-family="sans-serif" font-weight="bold">&#128196; PDF</text>
+          <!-- Filtri -->
+          <rect x="8" y="33" width="55" height="14" rx="7" fill="#f97316"/>
+          <text x="35" y="43" text-anchor="middle" font-size="7" fill="white" font-family="sans-serif" font-weight="bold">Tutte</text>
+          <rect x="68" y="33" width="65" height="14" rx="7" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="100" y="43" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">Ultimi 7 gg</text>
+          <rect x="138" y="33" width="70" height="14" rx="7" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="173" y="43" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">Ultimi 30 gg</text>
+          <rect x="213" y="33" width="40" height="14" rx="7" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="233" y="43" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">Oggi</text>
+          <!-- Cards segnalazioni -->
+          <rect x="8" y="53" width="284" height="28" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <circle cx="22" cy="67" r="4" fill="#f97316"/>
+          <text x="32" y="63" font-size="7" fill="#f97316" font-family="sans-serif">04/05/2025 — 08:32</text>
+          <text x="32" y="75" font-size="8" fill="#f1f5f9" font-family="sans-serif">&#128205; Via Roma 5, Bagnatica</text>
+          <rect x="8" y="86" width="284" height="28" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <circle cx="22" cy="100" r="4" fill="#f97316"/>
+          <text x="32" y="96" font-size="7" fill="#f97316" font-family="sans-serif">03/05/2025 — 21:15</text>
+          <text x="32" y="108" font-size="8" fill="#f1f5f9" font-family="sans-serif">&#128205; Via Roma 5, Bagnatica &#128221; odore acre</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- STEP 6: Invia -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e3a5f,#0f2440);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <div style="width:30px;height:30px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:18px;font-weight:900;color:#fff;flex-shrink:0;">6</div>
+        <div style="font-family:var(--fd);font-size:17px;font-weight:900;color:#fff;">Inviare la segnalazione</div>
+      </div>
+      <div style="padding:14px 16px;">
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Vai nella scheda <strong style="color:var(--text)">&#128232; Invia</strong>. Scegli il periodo, seleziona a chi inviare, poi premi il pulsante arancione <strong style="color:var(--text)">CONDIVIDI REPORT PDF</strong>.</p>
+        <div style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:1.5;">
+          &#128228; Si apre il <strong style="color:var(--text)">pannello di condivisione del telefono</strong> con il PDF gi&#224; pronto. Scegli la tua app email preferita &#8594; il file &#232; gi&#224; allegato &#8594; invia.
+        </div>
+        <svg viewBox="0 0 300 90" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:10px;">
+          <rect width="300" height="90" fill="#0f172a" rx="8"/>
+          <rect x="0" y="0" width="300" height="28" fill="#1e3a5f"/>
+          <text x="15" y="18" font-size="11" fill="white" font-family="sans-serif" font-weight="bold">&#128232; INVIA</text>
+          <!-- Periodo -->
+          <rect x="8" y="33" width="85" height="32" rx="6" fill="rgba(249,115,22,.15)" stroke="#f97316" stroke-width="1.5"/>
+          <text x="50" y="47" text-anchor="middle" font-size="14" fill="#f97316" font-family="sans-serif" font-weight="bold">12</text>
+          <text x="50" y="59" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">7 giorni</text>
+          <rect x="108" y="33" width="85" height="32" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="150" y="47" text-anchor="middle" font-size="14" fill="#f97316" font-family="sans-serif" font-weight="bold">38</text>
+          <text x="150" y="59" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">30 giorni</text>
+          <rect x="208" y="33" width="84" height="32" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="250" y="47" text-anchor="middle" font-size="14" fill="#f97316" font-family="sans-serif" font-weight="bold">54</text>
+          <text x="250" y="59" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">Tutte</text>
+          <!-- Pulsante condividi -->
+          <rect x="8" y="70" width="284" height="16" rx="5" fill="#f97316"/>
+          <text x="150" y="81" text-anchor="middle" font-size="9" fill="white" font-family="sans-serif" font-weight="bold">&#128228; CONDIVIDI REPORT PDF</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- STEP 7: Backup -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e3a5f,#0f2440);padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <div style="width:30px;height:30px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:18px;font-weight:900;color:#fff;flex-shrink:0;">7</div>
+        <div style="font-family:var(--fd);font-size:17px;font-weight:900;color:#fff;">Fare il backup</div>
+      </div>
+      <div style="padding:14px 16px;">
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px;">I dati sono salvati <strong style="color:var(--text)">solo sul tuo telefono</strong>. Se cambi telefono o reinstalli il browser li perdi. Vai in <strong style="color:var(--text)">&#9881;&#65039; Config</strong>, scorri in basso fino alla sezione <strong style="color:var(--text)">Backup e dati</strong> e premi <em>Backup JSON</em> ogni settimana. Salvalo su Google Drive o iCloud.</p>
+        <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--warn);line-height:1.5;">
+          &#9888;&#65039; Quando vedi il <strong>banner giallo</strong> in cima all'app &#8212; significa che non fai un backup da 7+ giorni. Non ignorarlo!
+        </div>
+      </div>
+    </div>
+
+    <div style="height:10px;"></div>
+  </div>
+</div>
 </body>
 </html>
