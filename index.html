@@ -693,56 +693,18 @@ async function condividiReport(){
 function costruisciTestoEmail(filtered){
   if(!config)return '';
   const lp=periodoInvia==='tutti'?'tutte le segnalazioni':'ultimi '+periodoInvia+' giorni';
-  let body='Gentili responsabili,
-
-';
+  let body='Gentili responsabili,\n\n';
   body+='mi chiamo '+config.nome+' '+config.cognome;
   if(config.comune)body+=', residente a '+config.comune;
-  body+='.
-
-Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati tramite apposita applicazione di monitoraggio.
-
-';
-  body+='Riepilogo segnalazioni ('+lp+'):
-';
-  body+='--------------------------------------------------
-';
-  filtered.forEach((s,i)=>{body+=(i+1)+'. '+s.data+' ore '+s.ora+' -- '+s.posizione;if(s.note)body+=' -- Note: '+s.note;body+='
-';});
-  body+='--------------------------------------------------
-';
-  body+='Totale: '+filtered.length+' segnalazioni
-
-';
-  body+='Si allega il report in formato PDF.
-
-In attesa di un vostro riscontro, rimango a disposizione.
-
-Cordiali saluti,
-'+config.nome+' '+config.cognome;
-  if(config.email)body+='
-'+config.email;
+  body+='.\n\nCon la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati tramite apposita applicazione di monitoraggio.\n\n';
+  body+='Riepilogo segnalazioni ('+lp+'):\n';
+  body+='--------------------------------------------------\n';
+  filtered.forEach((s,i)=>{body+=(i+1)+'. '+s.data+' ore '+s.ora+' -- '+s.posizione;if(s.note)body+=' -- Note: '+s.note;body+='\n';});
+  body+='--------------------------------------------------\n';
+  body+='Totale: '+filtered.length+' segnalazioni\n\n';
+  body+='Si allega il report in formato PDF.\n\nIn attesa di un vostro riscontro, rimango a disposizione.\n\nCordiali saluti,\n'+config.nome+' '+config.cognome;
+  if(config.email)body+='\n'+config.email;
   return body;
-}
-
-function generaPDFBlob(filtered,range){
-  const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'a4'});
-  const labels={'7':'Ultimi 7 giorni','30':'Ultimi 30 giorni','tutti':'Tutte le segnalazioni','oggi':'Oggi'};
-  const mitt=config?config.nome+' '+config.cognome+(config.comune?' -- '+config.comune:''):'';
-  doc.setFillColor(15,23,42);doc.rect(0,0,210,44,'F');
-  doc.setTextColor(249,115,22);doc.setFontSize(20);doc.setFont('helvetica','bold');doc.text('REPORT SEGNALAZIONI ODORI',14,16);
-  doc.setTextColor(148,163,184);doc.setFontSize(9);doc.setFont('helvetica','normal');
-  doc.text('Periodo: '+(labels[range]||range),14,25);doc.text('Generato il: '+formatData(new Date())+' ore '+formatOra(new Date()),14,31);
-  if(mitt)doc.text('Segnalante: '+mitt,14,37);doc.text('Totale: '+filtered.length+' segnalazioni',150,25);
-  doc.autoTable({startY:50,head:[['N','Data','Ora','Posizione','Note']],
-    body:filtered.map((s,i)=>[i+1,s.data,s.ora,s.posizione,s.note||'--']),
-    headStyles:{fillColor:[30,58,95],textColor:[241,245,249],fontStyle:'bold',fontSize:8},
-    bodyStyles:{fontSize:7.5,textColor:[40,40,40]},alternateRowStyles:{fillColor:[245,247,250]},
-    columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:23},2:{cellWidth:16},3:{cellWidth:100},4:{cellWidth:41}},
-    margin:{left:14,right:14}});
-  const tot=doc.internal.getNumberOfPages();
-  for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text('Pag. '+i+'/'+tot+' -- Segnala Odori',14,290);}
-  return doc.output('blob');
 }
 function apriEmail(){
   if(!config){showToast('Configura prima i tuoi dati in Config',true);return;}
