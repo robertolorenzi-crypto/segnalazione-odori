@@ -6,450 +6,262 @@
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Segnalazione Odori">
+  <meta name="apple-mobile-web-app-title" content="Segnala Odori">
   <link rel="manifest" href="./manifest.json">
-  <title>Segnalazione Odori</title>
-
+  <title>Segnala Odori</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-    :root {
-      --bg:        #0f172a;
-      --surface:   #1e293b;
-      --surface2:  #273549;
-      --border:    #334155;
-      --primary:   #f97316;
-      --primary-d: #ea580c;
-      --success:   #22c55e;
-      --danger:    #ef4444;
-      --warn:      #f59e0b;
-      --warn-soft: rgba(245,158,11,.12);
-      --warn-brd:  rgba(245,158,11,.3);
-      --text:      #f1f5f9;
-      --text2:     #94a3b8;
-      --text3:     #64748b;
-      --navy:      #1e3a5f;
-      --navy-d:    #0f2440;
-      --fd: 'Barlow Condensed', sans-serif;
-      --fb: 'Plus Jakarta Sans', sans-serif;
-      --fm: 'IBM Plex Mono', monospace;
-      --r: 14px;
-    }
-
-    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--fb); font-size: 15px; -webkit-font-smoothing: antialiased; }
-
-    #app { height: 100dvh; display: flex; flex-direction: column; }
-
-    /* ── APP BAR ── */
-    .app-bar {
-      background: linear-gradient(135deg, var(--navy-d) 0%, var(--navy) 100%);
-      padding: 14px 18px 12px;
-      display: flex; align-items: center; justify-content: space-between;
-      flex-shrink: 0;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .app-brand { display: flex; align-items: center; gap: 10px; }
-    .app-icon { font-size: 26px; }
-    .app-name { font-family: var(--fd); font-size: 24px; font-weight: 900; color: #fff; letter-spacing: 1px; line-height: 1; }
-    .app-sub  { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 1px; font-weight: 500; }
-    .live-badge {
-      display: flex; align-items: center; gap: 5px;
-      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
-      border-radius: 20px; padding: 5px 10px;
-      font-family: var(--fm); font-size: 11px; color: rgba(255,255,255,.7); font-weight: 500;
-    }
-    .live-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; animation: blink 2s ease-in-out infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-    /* ── BANNER BACKUP ── */
-    .backup-banner {
-      display: none; flex-shrink: 0;
-      background: var(--warn-soft); border-bottom: 1px solid var(--warn-brd);
-      border-left: 4px solid var(--warn);
-      padding: 10px 14px; align-items: center; gap: 10px;
-    }
-    .backup-banner.show { display: flex; }
-    .bb-ico { font-size: 18px; }
-    .bb-txt { flex: 1; font-size: 13px; font-weight: 700; color: var(--warn); line-height: 1.3; }
-    .bb-txt span { font-weight: 500; color: var(--text2); font-size: 12px; display: block; margin-top: 1px; }
-    .bb-actions { display: flex; gap: 6px; }
-    .bb-go  { background: var(--warn); color: #000; border: none; border-radius: 8px; padding: 6px 12px; font-family: var(--fb); font-size: 12px; font-weight: 700; cursor: pointer; }
-    .bb-close { background: transparent; color: var(--text2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-family: var(--fb); font-size: 12px; cursor: pointer; }
-
-    /* ── NAV TABS ── */
-    .nav-tabs {
-      display: flex; flex-shrink: 0;
-      background: var(--surface); border-bottom: 1px solid var(--border);
-    }
-    .tab {
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      gap: 3px; padding: 10px 4px 8px;
-      background: none; border: none; cursor: pointer;
-      font-family: var(--fb); font-size: 10px; font-weight: 600;
-      color: var(--text3); transition: color .2s;
-      position: relative;
-    }
-    .tab .tab-ico { font-size: 20px; }
-    .tab.active { color: var(--primary); }
-    .tab.active::after {
-      content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
-      height: 2px; background: var(--primary); border-radius: 2px 2px 0 0;
-    }
-
-    /* ── CONTENT AREA ── */
-    .content { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
-    .page { display: none; min-height: 100%; }
-    .page.active { display: block; }
-
-    /* ── HOME PAGE ── */
-    .home-hero {
-      display: flex; flex-direction: column; align-items: center;
-      padding: 32px 20px 24px; gap: 10px; text-align: center;
-    }
-    .hero-status {
-      font-size: 13px; font-weight: 600; color: var(--text2);
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 6px 14px;
-    }
-    .hero-count { font-family: var(--fd); font-size: 52px; font-weight: 900; color: var(--primary); line-height: 1; }
-    .hero-label { font-size: 13px; color: var(--text2); font-weight: 500; }
-
-    .btn-segnala {
-      margin: 8px 20px;
-      width: calc(100% - 40px);
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-d) 100%);
-      color: #fff; border: none; border-radius: var(--r);
-      padding: 22px 20px; cursor: pointer;
-      font-family: var(--fd); font-size: 28px; font-weight: 900;
-      letter-spacing: 1.5px; text-transform: uppercase;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      box-shadow: 0 8px 24px rgba(249,115,22,.35), 0 2px 6px rgba(0,0,0,.3);
-      transition: transform .15s, box-shadow .15s;
-      -webkit-user-select: none; user-select: none;
-    }
-    .btn-segnala:active { transform: scale(.97); box-shadow: 0 4px 12px rgba(249,115,22,.3); }
-    .btn-segnala .btn-ico { font-size: 30px; }
-
-    .pos-card {
-      margin: 12px 20px 0;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r); padding: 14px 16px;
-      display: flex; align-items: flex-start; gap: 12px;
-    }
-    .pos-ico { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
-    .pos-body { flex: 1; min-width: 0; }
-    .pos-label { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
-    .pos-value { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 3px; line-height: 1.4; word-break: break-word; }
-    .pos-coords { font-family: var(--fm); font-size: 11px; color: var(--text3); margin-top: 3px; }
-    .pos-actions { display: flex; gap: 8px; margin-top: 10px; }
-    .btn-sm {
-      flex: 1; background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 8px 6px;
-      font-family: var(--fb); font-size: 12px; font-weight: 600; color: var(--text2);
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
-      transition: background .15s;
-    }
-    .btn-sm:active { background: var(--border); }
-    .btn-sm.primary { background: rgba(249,115,22,.15); border-color: rgba(249,115,22,.3); color: var(--primary); }
-
-    .toast {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: var(--success); color: #fff; border-radius: 12px;
-      padding: 12px 20px; font-size: 14px; font-weight: 700;
-      white-space: nowrap; opacity: 0; pointer-events: none;
-      transition: all .3s; z-index: 999; display: flex; align-items: center; gap: 8px;
-    }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .toast.error { background: var(--danger); }
-
-    /* ── SEZIONE DIVIDER ── */
-    .section-title {
-      padding: 16px 20px 8px;
-      font-family: var(--fd); font-size: 18px; font-weight: 900;
-      color: var(--text2); letter-spacing: .5px; text-transform: uppercase;
-    }
-
-    /* ── STORICO ── */
-    .storico-header {
-      padding: 14px 20px 10px;
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    }
-    .storico-title { font-family: var(--fd); font-size: 22px; font-weight: 900; color: var(--text); }
-    .btn-pdf {
-      background: linear-gradient(135deg, #dc2626, #991b1b);
-      color: #fff; border: none; border-radius: 10px;
-      padding: 8px 14px; font-family: var(--fb); font-size: 13px; font-weight: 700;
-      cursor: pointer; display: flex; align-items: center; gap: 6px;
-      box-shadow: 0 2px 8px rgba(220,38,38,.3);
-    }
-    .filter-row {
-      display: flex; gap: 6px; padding: 0 20px 12px; overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .filter-row::-webkit-scrollbar { display: none; }
-    .filter-btn {
-      flex-shrink: 0; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 6px 14px; font-family: var(--fb); font-size: 12px;
-      font-weight: 600; color: var(--text2); cursor: pointer; transition: all .15s;
-    }
-    .filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
-
-    .segnalazioni-list { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 10px; }
-    .seg-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
-      padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start;
-    }
-    .seg-left { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
-    .seg-num { font-family: var(--fm); font-size: 11px; color: var(--text3); font-weight: 500; }
-    .seg-dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; margin-top: 2px; }
-    .seg-body { flex: 1; min-width: 0; }
-    .seg-datetime { font-family: var(--fm); font-size: 12px; color: var(--primary); font-weight: 500; }
-    .seg-pos { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 3px; line-height: 1.4; word-break: break-word; }
-    .seg-coords { font-family: var(--fm); font-size: 10px; color: var(--text3); margin-top: 2px; }
-    .seg-del { background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; padding: 2px 4px; align-self: flex-start; }
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
-    .empty-state .empty-ico { font-size: 48px; margin-bottom: 12px; }
-    .empty-state p { font-size: 15px; font-weight: 500; }
-    .empty-state span { font-size: 13px; display: block; margin-top: 6px; }
-
-    /* ── BACKUP ── */
-    .backup-page { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-    .backup-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
-      overflow: hidden;
-    }
-    .backup-card-header {
-      padding: 14px 16px; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 10px;
-    }
-    .backup-card-header .card-ico { font-size: 22px; }
-    .backup-card-title { font-family: var(--fd); font-size: 18px; font-weight: 900; color: var(--text); }
-    .backup-card-sub { font-size: 12px; color: var(--text2); margin-top: 1px; }
-    .backup-card-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-    .btn-full {
-      width: 100%; padding: 14px; border: none; border-radius: 10px;
-      font-family: var(--fb); font-size: 15px; font-weight: 700; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: opacity .15s;
-    }
-    .btn-full:active { opacity: .85; }
-    .btn-save { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; }
-    .btn-restore { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .btn-clear { background: rgba(239,68,68,.15); color: var(--danger); border: 1px solid rgba(239,68,68,.25); }
-    .backup-info {
-      font-family: var(--fm); font-size: 12px; color: var(--text3); text-align: center;
-      padding: 8px 16px 14px;
-    }
-    .stat-row {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    }
-    .stat-box {
-      background: var(--surface2); border-radius: 10px; padding: 14px;
-      text-align: center; border: 1px solid var(--border);
-    }
-    .stat-num { font-family: var(--fd); font-size: 32px; font-weight: 900; color: var(--primary); }
-    .stat-lbl { font-size: 12px; color: var(--text2); font-weight: 500; margin-top: 2px; }
-
-    /* ── ISTRUZIONI ── */
-    .istruzioni-page { padding: 20px; }
-    .istr-hero {
-      text-align: center; padding: 20px 0 24px;
-      font-family: var(--fd); font-size: 28px; font-weight: 900;
-      color: var(--text); letter-spacing: .5px;
-    }
-    .istr-hero span { display: block; font-family: var(--fb); font-size: 14px; font-weight: 500; color: var(--text2); letter-spacing: 0; margin-top: 4px; }
-    .istr-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
-      margin-bottom: 12px; overflow: hidden;
-    }
-    .istr-step {
-      display: flex; gap: 14px; padding: 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    .istr-step:last-child { border-bottom: none; }
-    .istr-num {
-      width: 32px; height: 32px; flex-shrink: 0;
-      background: var(--primary); border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--fd); font-size: 18px; font-weight: 900; color: #fff;
-    }
-    .istr-body { flex: 1; }
-    .istr-title { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; }
-    .istr-desc { font-size: 13px; color: var(--text2); margin-top: 5px; line-height: 1.5; }
-    .istr-tip {
-      background: rgba(249,115,22,.1); border: 1px solid rgba(249,115,22,.25);
-      border-radius: 10px; padding: 12px 14px; margin-top: 4px;
-      font-size: 13px; color: var(--text2); display: flex; gap: 8px; align-items: flex-start;
-    }
-    .istr-tip b { color: var(--primary); }
-
-    /* ── MODAL ── */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; z-index: 100;
-      background: rgba(0,0,0,.7); align-items: flex-end; justify-content: center;
-    }
-    .modal-overlay.show { display: flex; }
-    .modal {
-      background: var(--surface); border-radius: 20px 20px 0 0;
-      padding: 24px 20px 36px; width: 100%; max-width: 480px;
-    }
-    .modal h2 { font-family: var(--fd); font-size: 22px; margin-bottom: 16px; }
-    .modal label { font-size: 13px; font-weight: 600; color: var(--text2); display: block; margin-bottom: 6px; }
-    .modal input, .modal textarea {
-      width: 100%; background: var(--bg); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px 14px; color: var(--text);
-      font-family: var(--fb); font-size: 15px; outline: none;
-      -webkit-appearance: none;
-    }
-    .modal input:focus, .modal textarea:focus { border-color: var(--primary); }
-    .modal .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-    .btn-cancel { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 13px; font-family: var(--fb); font-size: 15px; font-weight: 600; color: var(--text2); cursor: pointer; }
-    .btn-confirm { flex: 2; background: var(--primary); border: none; border-radius: 10px; padding: 13px; font-family: var(--fb); font-size: 15px; font-weight: 700; color: #fff; cursor: pointer; }
-
-    /* ── PDF MODAL ── */
-    .pdf-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-    .pdf-option {
-      display: flex; align-items: center; gap: 14px;
-      background: var(--bg); border: 2px solid var(--border);
-      border-radius: 12px; padding: 14px 16px; cursor: pointer;
-      transition: border-color .15s;
-    }
-    .pdf-option.selected { border-color: var(--primary); background: rgba(249,115,22,.08); }
-    .pdf-option input[type=radio] { display: none; }
-    .pdf-opt-ico { font-size: 24px; }
-    .pdf-opt-body { flex: 1; }
-    .pdf-opt-title { font-size: 15px; font-weight: 700; color: var(--text); }
-    .pdf-opt-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
-
-    /* ── CONFERMA DELETE ── */
-    .confirm-msg { font-size: 14px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
-    .btn-delete { flex: 2; background: var(--danger); border: none; border-radius: 10px; padding: 13px; font-family: var(--fb); font-size: 15px; font-weight: 700; color: #fff; cursor: pointer; }
-
-    /* ── NOTE ── */
-    .note-form { margin: 0 20px; }
-    .note-area { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: var(--fb); font-size: 14px; resize: none; outline: none; margin-bottom: 10px; }
-    .note-area:focus { border-color: var(--primary); }
-
-    /* ── INSTALL BANNER ── */
-    .install-banner {
-      display: none; flex-shrink: 0;
-      background: rgba(14,165,233,.1); border-bottom: 1px solid rgba(14,165,233,.2);
-      border-left: 4px solid #0ea5e9;
-      padding: 10px 14px; align-items: center; gap: 10px;
-    }
-    .install-banner.show { display: flex; }
-    .ib-txt { flex: 1; font-size: 13px; font-weight: 600; color: #7dd3fc; }
-    .ib-btn { background: #0ea5e9; color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-family: var(--fb); font-size: 12px; font-weight: 700; cursor: pointer; }
-    .ib-close { background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; }
-
-    input[type="file"] { display: none; }
-
-    @media (min-width: 480px) {
-      .btn-segnala { margin: 8px auto; max-width: 400px; display: flex; }
-      .pos-card { max-width: 440px; margin-left: auto; margin-right: auto; }
-    }
-  </style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#273549;--border:#334155;
+  --primary:#f97316;--primary-d:#ea580c;--success:#22c55e;--danger:#ef4444;
+  --warn:#f59e0b;--warn-soft:rgba(245,158,11,.12);--warn-brd:rgba(245,158,11,.3);
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;--navy:#1e3a5f;--navy-d:#0f2440;
+  --fd:'Barlow Condensed',sans-serif;--fb:'Plus Jakarta Sans',sans-serif;--fm:'IBM Plex Mono',monospace;--r:14px;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--fb);font-size:15px;-webkit-font-smoothing:antialiased}
+#app{height:100dvh;display:flex;flex-direction:column}
+.app-bar{background:linear-gradient(135deg,var(--navy-d) 0%,var(--navy) 100%);padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08)}
+.app-brand{display:flex;align-items:center;gap:9px}
+.app-icon{font-size:24px}
+.app-name{font-family:var(--fd);font-size:22px;font-weight:900;color:#fff;letter-spacing:1px;line-height:1}
+.app-sub{font-size:10px;color:rgba(255,255,255,.45);margin-top:1px;font-weight:500}
+.live-badge{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 9px;font-family:var(--fm);font-size:10px;color:rgba(255,255,255,.7)}
+.live-dot{width:6px;height:6px;background:#4ade80;border-radius:50%;animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.backup-banner{display:none;flex-shrink:0;background:var(--warn-soft);border-bottom:1px solid var(--warn-brd);border-left:4px solid var(--warn);padding:9px 12px;align-items:center;gap:9px}
+.backup-banner.show{display:flex}
+.bb-ico{font-size:17px}.bb-txt{flex:1;font-size:12px;font-weight:700;color:var(--warn);line-height:1.3}
+.bb-txt span{font-weight:500;color:var(--text2);font-size:11px;display:block;margin-top:1px}
+.bb-actions{display:flex;gap:5px}
+.bb-go{background:var(--warn);color:#000;border:none;border-radius:7px;padding:5px 11px;font-family:var(--fb);font-size:11px;font-weight:700;cursor:pointer}
+.bb-close{background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-family:var(--fb);font-size:11px;cursor:pointer}
+.nav-tabs{display:flex;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 6px;background:none;border:none;cursor:pointer;font-family:var(--fb);font-size:9px;font-weight:600;color:var(--text3);transition:color .2s;position:relative}
+.tab .ti{font-size:18px}
+.tab.active{color:var(--primary)}
+.tab.active::after{content:'';position:absolute;bottom:0;left:15%;right:15%;height:2px;background:var(--primary);border-radius:2px 2px 0 0}
+.content{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.page{display:none;min-height:100%}
+.page.active{display:block}
+.home-hero{display:flex;flex-direction:column;align-items:center;padding:24px 20px 16px;gap:8px;text-align:center}
+.hero-status{font-size:12px;font-weight:600;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 13px}
+.hero-count{font-family:var(--fd);font-size:50px;font-weight:900;color:var(--primary);line-height:1}
+.hero-label{font-size:12px;color:var(--text2);font-weight:500}
+.btn-segnala{margin:6px 20px;width:calc(100% - 40px);background:linear-gradient(135deg,var(--primary) 0%,var(--primary-d) 100%);color:#fff;border:none;border-radius:var(--r);padding:20px;cursor:pointer;font-family:var(--fd);font-size:26px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 24px rgba(249,115,22,.35),0 2px 6px rgba(0,0,0,.3);transition:transform .15s,box-shadow .15s;-webkit-user-select:none;user-select:none}
+.btn-segnala:active{transform:scale(.97);box-shadow:0 4px 12px rgba(249,115,22,.3)}
+.btn-ico{font-size:26px}
+.pos-card{margin:10px 20px 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;display:flex;align-items:flex-start;gap:11px}
+.pos-ico{font-size:20px;flex-shrink:0;margin-top:2px}
+.pos-body{flex:1;min-width:0}
+.pos-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.pos-value{font-size:13px;font-weight:600;color:var(--text);margin-top:3px;line-height:1.4;word-break:break-word}
+.pos-coords{font-family:var(--fm);font-size:10px;color:var(--text3);margin-top:2px}
+.pos-actions{display:flex;gap:7px;margin-top:9px}
+.btn-sm{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 4px;font-family:var(--fb);font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:background .15s}
+.btn-sm:active{background:var(--border)}
+.btn-sm.primary{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.3);color:var(--primary)}
+.note-form{margin:12px 20px 0}
+.note-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.note-area{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:var(--fb);font-size:13px;resize:none;outline:none}
+.note-area:focus{border-color:var(--primary)}
+.storico-header{padding:13px 20px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.storico-title{font-family:var(--fd);font-size:20px;font-weight:900;color:var(--text)}
+.btn-pdf{background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;border:none;border-radius:9px;padding:7px 13px;font-family:var(--fb);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 2px 8px rgba(220,38,38,.3)}
+.filter-row{display:flex;gap:6px;padding:0 20px 10px;overflow-x:auto;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.filter-btn{flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-family:var(--fb);font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.filter-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.segnalazioni-list{padding:0 20px 20px;display:flex;flex-direction:column;gap:9px}
+.seg-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;display:flex;gap:11px;align-items:flex-start}
+.seg-left{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.seg-num{font-family:var(--fm);font-size:10px;color:var(--text3)}
+.seg-dot{width:7px;height:7px;background:var(--primary);border-radius:50%;margin-top:1px}
+.seg-body{flex:1;min-width:0}
+.seg-datetime{font-family:var(--fm);font-size:11px;color:var(--primary);font-weight:500}
+.seg-pos{font-size:12px;font-weight:600;color:var(--text);margin-top:3px;line-height:1.4;word-break:break-word}
+.seg-note{font-size:11px;color:var(--text2);margin-top:3px}
+.seg-coords{font-family:var(--fm);font-size:9px;color:var(--text3);margin-top:2px}
+.seg-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:2px 3px;align-self:flex-start}
+.empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
+.empty-state .empty-ico{font-size:44px;margin-bottom:10px}
+.empty-state p{font-size:14px;font-weight:500}
+.empty-state span{font-size:12px;display:block;margin-top:5px}
+.invia-page,.backup-page,.config-page{padding:20px;display:flex;flex-direction:column;gap:12px}
+.invia-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.card-header{padding:13px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px}
+.card-ico{font-size:20px}
+.card-title{font-family:var(--fd);font-size:17px;font-weight:900;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.card-body{padding:14px;display:flex;flex-direction:column;gap:10px}
+.periodo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.periodo-opt{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:10px 5px;text-align:center;cursor:pointer;transition:all .15s}
+.periodo-opt.sel{border-color:var(--primary);background:rgba(249,115,22,.1)}
+.periodo-opt .po-num{font-family:var(--fd);font-size:22px;font-weight:900;color:var(--primary)}
+.periodo-opt .po-lbl{font-size:10px;font-weight:600;color:var(--text2);margin-top:1px}
+.dest-list{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto}
+.dest-item{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .15s}
+.dest-item.checked{border-color:var(--primary)}
+.dest-check{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s}
+.dest-item.checked .dest-check{background:var(--primary);border-color:var(--primary)}
+.dest-info{flex:1;min-width:0}
+.dest-nome{font-size:12px;font-weight:700;color:var(--text);line-height:1.3}
+.dest-email{font-family:var(--fm);font-size:10px;color:var(--text3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dest-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;flex-shrink:0}
+.tag-istituzione{background:rgba(14,165,233,.15);color:#7dd3fc}
+.tag-comune{background:rgba(34,197,94,.15);color:#86efac}
+.btn-full{width:100%;padding:13px;border:none;border-radius:10px;font-family:var(--fb);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s}
+.btn-full:active{opacity:.85}
+.btn-primary-full{background:linear-gradient(135deg,var(--primary),var(--primary-d));color:#fff;box-shadow:0 4px 14px rgba(249,115,22,.3)}
+.btn-blue{background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff}
+.btn-green{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff}
+.btn-surface{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-danger-full{background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.25)}
+.info-box{background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);border-radius:9px;padding:10px 12px;font-size:11px;color:#7dd3fc;line-height:1.5;display:flex;gap:7px}
+.warn-box{background:var(--warn-soft);border:1px solid var(--warn-brd);border-radius:9px;padding:10px 12px;font-size:11px;color:var(--warn);line-height:1.5;display:flex;gap:7px}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px;text-align:center}
+.stat-num{font-family:var(--fd);font-size:30px;font-weight:900;color:var(--primary)}
+.stat-lbl{font-size:11px;color:var(--text2);font-weight:500;margin-top:1px}
+.backup-info{font-family:var(--fm);font-size:11px;color:var(--text3);text-align:center;padding:6px 14px 12px}
+.config-field{display:flex;flex-direction:column;gap:5px}
+.config-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.config-input{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none;width:100%;-webkit-appearance:none}
+.config-input:focus{border-color:var(--primary)}
+select.config-input{cursor:pointer}
+.config-section{font-family:var(--fd);font-size:16px;font-weight:900;color:var(--text2);padding:4px 0 2px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);margin-bottom:4px}
+.dest-manage{display:flex;flex-direction:column;gap:6px}
+.dest-manage-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 11px}
+.dm-info{flex:1;min-width:0}
+.dm-nome{font-size:12px;font-weight:700;color:var(--text)}
+.dm-email{font-family:var(--fm);font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-del{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px}
+.toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--success);color:#fff;border-radius:11px;padding:11px 18px;font-size:13px;font-weight:700;white-space:nowrap;opacity:0;pointer-events:none;transition:all .3s;z-index:999;display:flex;align-items:center;gap:7px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--danger)}
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:22px 20px 36px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal h2{font-family:var(--fd);font-size:21px;margin-bottom:14px}
+.modal label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px}
+.modal input,.modal textarea,.modal select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none;-webkit-appearance:none;margin-bottom:12px}
+.modal input:focus,.modal select:focus{border-color:var(--primary)}
+.modal-actions{display:flex;gap:9px;margin-top:4px}
+.btn-cancel{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px;font-family:var(--fb);font-size:14px;font-weight:600;color:var(--text2);cursor:pointer}
+.btn-confirm{flex:2;background:var(--primary);border:none;border-radius:9px;padding:12px;font-family:var(--fb);font-size:14px;font-weight:700;color:#fff;cursor:pointer}
+.btn-delete{flex:2;background:var(--danger);border:none;border-radius:9px;padding:12px;font-family:var(--fb);font-size:14px;font-weight:700;color:#fff;cursor:pointer}
+.confirm-msg{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.onboarding{display:none;position:fixed;inset:0;z-index:500;background:var(--bg);flex-direction:column;overflow-y:auto}
+.onboarding.show{display:flex}
+.ob-header{background:linear-gradient(135deg,var(--navy-d),var(--navy));padding:20px;flex-shrink:0}
+.ob-step-indicator{display:flex;gap:6px;margin-bottom:14px}
+.ob-step-dot{height:4px;border-radius:2px;flex:1;background:rgba(255,255,255,.2);transition:background .3s}
+.ob-step-dot.done{background:var(--primary)}
+.ob-title{font-family:var(--fd);font-size:26px;font-weight:900;color:#fff;letter-spacing:.5px}
+.ob-sub{font-size:13px;color:rgba(255,255,255,.55);margin-top:4px}
+.ob-body{flex:1;padding:20px;display:flex;flex-direction:column;gap:14px}
+.ob-field{display:flex;flex-direction:column;gap:5px}
+.ob-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.ob-input{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:var(--fb);font-size:15px;outline:none;width:100%;-webkit-appearance:none}
+.ob-input:focus{border-color:var(--primary)}
+select.ob-input{cursor:pointer}
+.ob-footer{padding:16px 20px 32px;display:flex;gap:10px;flex-shrink:0}
+.btn-ob-back{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;font-family:var(--fb);font-size:15px;font-weight:600;color:var(--text2);cursor:pointer}
+.btn-ob-next{flex:2;background:var(--primary);border:none;border-radius:10px;padding:14px;font-family:var(--fd);font-size:20px;font-weight:900;color:#fff;letter-spacing:.5px;cursor:pointer}
+.ob-dest-list{display:flex;flex-direction:column;gap:7px}
+.ob-dest-item{display:flex;align-items:center;gap:10px;background:var(--surface);border:2px solid var(--border);border-radius:11px;padding:11px 13px;cursor:pointer;transition:border-color .15s}
+.ob-dest-item.checked{border-color:var(--primary);background:rgba(249,115,22,.07)}
+.ob-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.ob-dest-item.checked .ob-check{background:var(--primary);border-color:var(--primary)}
+.ob-dest-nome{font-size:13px;font-weight:700;color:var(--text)}
+.ob-dest-email{font-family:var(--fm);font-size:10px;color:var(--text3);margin-top:1px}
+.ob-dest-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0}
+.ob-summary{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.ob-sum-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);gap:10px}
+.ob-sum-row:last-child{border-bottom:none}
+.ob-sum-key{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;flex-shrink:0}
+.ob-sum-val{font-size:12px;font-weight:600;color:var(--text);text-align:right;word-break:break-word}
+input[type="file"]{display:none}
+</style>
 </head>
 <body>
 <div id="app">
-
-  <!-- APP BAR -->
+  <div class="onboarding" id="onboarding">
+    <div class="ob-header">
+      <div class="ob-step-indicator">
+        <div class="ob-step-dot done" id="dot0"></div>
+        <div class="ob-step-dot" id="dot1"></div>
+        <div class="ob-step-dot" id="dot2"></div>
+        <div class="ob-step-dot" id="dot3"></div>
+      </div>
+      <div class="ob-title" id="ob-title">Benvenuto!</div>
+      <div class="ob-sub" id="ob-sub">Configuriamo l'app in pochi passi</div>
+    </div>
+    <div class="ob-body" id="ob-body"></div>
+    <div class="ob-footer">
+      <button class="btn-ob-back" id="ob-back" onclick="obBack()">Indietro</button>
+      <button class="btn-ob-next" id="ob-next" onclick="obNext()">AVANTI</button>
+    </div>
+  </div>
   <div class="app-bar">
     <div class="app-brand">
-      <span class="app-icon">👃</span>
-      <div>
-        <div class="app-name">SEGNALAZIONE ODORI</div>
-        <div class="app-sub">Monitoraggio odori zona</div>
-      </div>
+      <span class="app-icon">&#128067;</span>
+      <div><div class="app-name">SEGNALA ODORI</div><div class="app-sub">Monitoraggio odori zona</div></div>
     </div>
-    <div class="live-badge">
-      <span class="live-dot"></span>
-      ATTIVA
-    </div>
+    <div class="live-badge"><span class="live-dot"></span>ATTIVA</div>
   </div>
-
-  <!-- BANNER BACKUP -->
   <div class="backup-banner" id="backupBanner">
-    <span class="bb-ico">💾</span>
-    <div class="bb-txt">Backup consigliato!
-      <span>Non fai un backup da 7+ giorni. I dati sono solo sul tuo telefono.</span>
-    </div>
+    <span class="bb-ico">&#128190;</span>
+    <div class="bb-txt">Backup consigliato!<span>Non fai un backup da 7+ giorni.</span></div>
     <div class="bb-actions">
-      <button class="bb-go" onclick="goBackup()">Backup</button>
-      <button class="bb-close" onclick="dismissBanner()">✕</button>
+      <button class="bb-go" onclick="goTab('backup')">Backup</button>
+      <button class="bb-close" onclick="dismissBanner()">&#x2715;</button>
     </div>
   </div>
-
-  <!-- INSTALL BANNER -->
-  <div class="install-banner" id="installBanner">
-    <span class="ib-txt">📲 Installa l'app sul telefono per usarla offline</span>
-    <button class="ib-btn" id="installBtn">Installa</button>
-    <button class="ib-close" onclick="document.getElementById('installBanner').classList.remove('show')">✕</button>
-  </div>
-
-  <!-- NAV TABS -->
   <div class="nav-tabs">
-    <button class="tab active" onclick="showPage('home',this)">
-      <span class="tab-ico">🏠</span>Home
-    </button>
-    <button class="tab" onclick="showPage('storico',this)">
-      <span class="tab-ico">📋</span>Storico
-    </button>
-    <button class="tab" onclick="showPage('backup',this)">
-      <span class="tab-ico">💾</span>Backup
-    </button>
-    <button class="tab" onclick="showPage('istruzioni',this)">
-      <span class="tab-ico">❓</span>Guida
-    </button>
+    <button class="tab active" onclick="goTab('home',this)"><span class="ti">&#127968;</span>Home</button>
+    <button class="tab" onclick="goTab('storico',this)"><span class="ti">&#128203;</span>Storico</button>
+    <button class="tab" onclick="goTab('invia',this)"><span class="ti">&#128232;</span>Invia</button>
+    <button class="tab" onclick="goTab('backup',this)"><span class="ti">&#128190;</span>Backup</button>
+    <button class="tab" onclick="goTab('config',this)"><span class="ti">&#9881;&#65039;</span>Config</button>
   </div>
-
-  <!-- CONTENT -->
   <div class="content">
-
-    <!-- HOME -->
     <div class="page active" id="page-home">
       <div class="home-hero">
-        <div class="hero-status">🗓️ Segnalazioni oggi: <strong id="countOggi">0</strong></div>
+        <div class="hero-status">&#128197; Oggi: <strong id="countOggi">0</strong></div>
         <div class="hero-count" id="countTotale">0</div>
         <div class="hero-label">segnalazioni totali</div>
       </div>
-
       <button class="btn-segnala" id="btnSegnala" onclick="segnalaOdore()">
-        <span class="btn-ico">🚨</span>
-        SEGNALA ODORE ORA
+        <span class="btn-ico">&#128680;</span>SEGNALA ODORE ORA
       </button>
-
       <div class="pos-card">
-        <span class="pos-ico">📍</span>
+        <span class="pos-ico">&#128205;</span>
         <div class="pos-body">
           <div class="pos-label">Posizione attiva</div>
-          <div class="pos-value" id="posValue">Caricamento posizione...</div>
+          <div class="pos-value" id="posValue">Caricamento...</div>
           <div class="pos-coords" id="posCoords"></div>
           <div class="pos-actions">
-            <button class="btn-sm primary" onclick="rilevaPosizione()">📡 GPS</button>
-            <button class="btn-sm" onclick="openModalPosizione()">✏️ Manuale</button>
-            <button class="btn-sm" onclick="usaPosizioneDefault()">🏠 Default</button>
+            <button class="btn-sm primary" onclick="rilevaPosizione()">&#128225; GPS</button>
+            <button class="btn-sm" onclick="openModalPosManu()">&#9998;&#65039; Manuale</button>
+            <button class="btn-sm" onclick="usaPosizioneDefault()">&#127968; Default</button>
           </div>
         </div>
       </div>
-
-      <div class="note-form" style="margin-top:14px;">
-        <div class="pos-label" style="margin-bottom:6px; padding: 0 0 0 2px; font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.5px;">Note aggiuntive (opzionale)</div>
-        <textarea class="note-area" id="noteExtra" rows="2" placeholder="Es: odore forte di bruciato, provenienza nord..."></textarea>
+      <div class="note-form">
+        <div class="note-label">Note aggiuntive (opzionale)</div>
+        <textarea class="note-area" id="noteExtra" rows="2" placeholder="Es: odore acre intenso, sembra spazzatura, provenienza nord-est..."></textarea>
       </div>
+      <div style="height:16px"></div>
     </div>
-
-    <!-- STORICO -->
     <div class="page" id="page-storico">
       <div class="storico-header">
-        <div class="storico-title">📋 STORICO</div>
-        <button class="btn-pdf" onclick="openPdfModal()">📄 PDF</button>
+        <div class="storico-title">&#128203; STORICO</div>
+        <button class="btn-pdf" onclick="openPdfModal()">&#128196; PDF</button>
       </div>
       <div class="filter-row">
         <button class="filter-btn active" onclick="setFilter('tutti',this)">Tutte</button>
@@ -459,706 +271,557 @@
       </div>
       <div class="segnalazioni-list" id="listaSegnalazioni"></div>
     </div>
-
-    <!-- BACKUP -->
-    <div class="page" id="page-backup">
-      <div class="backup-page">
-
-        <div class="stat-row">
-          <div class="stat-box">
-            <div class="stat-num" id="statTot">0</div>
-            <div class="stat-lbl">Segnalazioni totali</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-num" id="statOggi">0</div>
-            <div class="stat-lbl">Segnalazioni oggi</div>
+    <div class="page" id="page-invia">
+      <div class="invia-page">
+        <div class="invia-card">
+          <div class="card-header"><span class="card-ico">&#128197;</span><div><div class="card-title">Periodo report</div><div class="card-sub">Segnalazioni da includere</div></div></div>
+          <div class="card-body">
+            <div class="periodo-grid">
+              <div class="periodo-opt sel" id="po7" onclick="selPeriodo('7')"><div class="po-num" id="pn7">0</div><div class="po-lbl">7 giorni</div></div>
+              <div class="periodo-opt" id="po30" onclick="selPeriodo('30')"><div class="po-num" id="pn30">0</div><div class="po-lbl">30 giorni</div></div>
+              <div class="periodo-opt" id="poAll" onclick="selPeriodo('tutti')"><div class="po-num" id="pnAll">0</div><div class="po-lbl">Tutte</div></div>
+            </div>
+            <button class="btn-full btn-blue" onclick="generaPDFInvia()">&#128229; Scarica PDF (fallback)</button>
           </div>
         </div>
-
-        <div class="backup-card">
-          <div class="backup-card-header">
-            <span class="card-ico">💾</span>
-            <div>
-              <div class="backup-card-title">Salva Backup</div>
-              <div class="backup-card-sub">Scarica un file con tutte le segnalazioni</div>
-            </div>
-          </div>
-          <div class="backup-card-body">
-            <button class="btn-full btn-save" onclick="esportaBackup()">
-              💾 Scarica file di backup (.json)
-            </button>
-            <button class="btn-full btn-save" style="background: linear-gradient(135deg,#16a34a,#15803d);" onclick="esportaCSV()">
-              📊 Esporta come CSV (Excel)
-            </button>
+        <div class="invia-card">
+          <div class="card-header"><span class="card-ico">&#128232;</span><div><div class="card-title">Destinatari</div><div class="card-sub">Seleziona a chi inviare</div></div></div>
+          <div class="card-body"><div class="dest-list" id="inviaDestList"></div></div>
+        </div>
+        <div class="info-box"><span>&#128161;</span><div>Premi <strong>CONDIVIDI REPORT</strong>: si apre il pannello del telefono con il PDF gia' allegato. Scegli Email, poi incolla il testo dell'email che verra' copiato automaticamente.</div></div>
+        <button class="btn-full btn-primary-full" style="font-family:var(--fd);font-size:22px;letter-spacing:.5px;" onclick="condividiReport()">&#128228; CONDIVIDI REPORT PDF</button>
+        <button class="btn-full btn-surface" style="margin-top:-4px;font-size:13px;" onclick="apriEmail()">&#128232; Solo testo email (senza allegato)</button>
+        <div class="info-box"><span>&#8505;&#65039;</span><div>Gestisci i destinatari dalla scheda <strong>&#9881;&#65039; Config</strong>.</div></div>
+      </div>
+    </div>
+    <div class="page" id="page-backup">
+      <div class="backup-page">
+        <div class="stat-row">
+          <div class="stat-box"><div class="stat-num" id="statTot">0</div><div class="stat-lbl">Totale segnalazioni</div></div>
+          <div class="stat-box"><div class="stat-num" id="statOggi">0</div><div class="stat-lbl">Segnalazioni oggi</div></div>
+        </div>
+        <div class="invia-card">
+          <div class="card-header"><span class="card-ico">&#128190;</span><div><div class="card-title">Salva backup</div><div class="card-sub">Scarica i tuoi dati</div></div></div>
+          <div class="card-body">
+            <button class="btn-full btn-blue" onclick="esportaBackup()">&#128190; Backup JSON</button>
+            <button class="btn-full btn-green" onclick="esportaCSV()">&#128202; Esporta CSV (Excel)</button>
           </div>
           <div class="backup-info" id="ultimoBackup">Ultimo backup: mai effettuato</div>
         </div>
-
-        <div class="backup-card">
-          <div class="backup-card-header">
-            <span class="card-ico">📂</span>
-            <div>
-              <div class="backup-card-title">Ripristina</div>
-              <div class="backup-card-sub">Carica un backup salvato in precedenza</div>
-            </div>
-          </div>
-          <div class="backup-card-body">
-            <button class="btn-full btn-restore" onclick="document.getElementById('fileInput').click()">
-              📂 Carica file di backup (.json)
-            </button>
+        <div class="invia-card">
+          <div class="card-header"><span class="card-ico">&#128194;</span><div><div class="card-title">Ripristina</div><div class="card-sub">Carica un backup precedente</div></div></div>
+          <div class="card-body">
+            <button class="btn-full btn-surface" onclick="document.getElementById('fileInput').click()">&#128194; Carica file backup (.json)</button>
             <input type="file" id="fileInput" accept=".json" onchange="ripristinaBackup(this)">
           </div>
         </div>
-
-        <div class="backup-card">
-          <div class="backup-card-header">
-            <span class="card-ico">⚙️</span>
-            <div>
-              <div class="backup-card-title">Posizione Default</div>
-              <div class="backup-card-sub">Indirizzo usato quando non usi il GPS</div>
-            </div>
-          </div>
-          <div class="backup-card-body">
-            <div style="font-size:14px; color:var(--text2); font-weight:500;" id="defaultPosLabel">Non impostata</div>
-            <button class="btn-full btn-restore" onclick="openModalDefault()">
-              ✏️ Modifica posizione default
-            </button>
-          </div>
-        </div>
-
-        <div class="backup-card">
-          <div class="backup-card-header">
-            <span class="card-ico">🗑️</span>
-            <div>
-              <div class="backup-card-title">Cancella Dati</div>
-              <div class="backup-card-sub">Elimina tutte le segnalazioni</div>
-            </div>
-          </div>
-          <div class="backup-card-body">
-            <button class="btn-full btn-clear" onclick="openConfirmClear()">
-              🗑️ Cancella tutte le segnalazioni
-            </button>
-          </div>
+        <div class="invia-card">
+          <div class="card-header"><span class="card-ico">&#128465;&#65039;</span><div><div class="card-title">Cancella dati</div><div class="card-sub">Elimina tutte le segnalazioni</div></div></div>
+          <div class="card-body"><button class="btn-full btn-danger-full" onclick="openModal('modalClear')">&#128465;&#65039; Cancella tutto</button></div>
         </div>
       </div>
     </div>
-
-    <!-- ISTRUZIONI -->
-    <div class="page" id="page-istruzioni">
-      <div class="istruzioni-page">
-        <div class="istr-hero">
-          COME USARE L'APP
-          <span>Guida semplice passo per passo</span>
+    <div class="page" id="page-config">
+      <div class="config-page">
+        <div class="config-section">&#128100; Dati personali</div>
+        <div class="config-field"><div class="config-label">Nome</div><input class="config-input" id="cfgNome" placeholder="Mario"></div>
+        <div class="config-field"><div class="config-label">Cognome</div><input class="config-input" id="cfgCognome" placeholder="Rossi"></div>
+        <div class="config-field"><div class="config-label">La tua email (mittente)</div><input class="config-input" id="cfgEmail" type="email" placeholder="mario.rossi@email.it"></div>
+        <div class="config-section" style="margin-top:8px">&#128205; Residenza</div>
+        <div class="config-field">
+          <div class="config-label">Comune di residenza</div>
+          <select class="config-input" id="cfgComune" onchange="onComuneChange()">
+            <option value="">-- Seleziona comune --</option>
+            <option value="Bagnatica">Bagnatica</option>
+            <option value="San Paolo d'Argon">San Paolo d'Argon</option>
+            <option value="Gorlago">Gorlago</option>
+            <option value="Albano Sant'Alessandro">Albano Sant'Alessandro</option>
+            <option value="Montello">Montello</option>
+            <option value="Costa di Mezzate">Costa di Mezzate</option>
+            <option value="Brusaporto">Brusaporto</option>
+            <option value="Trescore Balneario">Trescore Balneario</option>
+            <option value="Cenate Sotto">Cenate Sotto</option>
+            <option value="altro">Altro comune...</option>
+          </select>
         </div>
-
-        <div class="istr-card">
-          <div class="istr-step">
-            <div class="istr-num">1</div>
-            <div class="istr-body">
-              <div class="istr-title">🏠 Installa l'app sul telefono</div>
-              <div class="istr-desc">Apri questa pagina dal browser del tuo telefono. Apparirà un messaggio in alto che dice <b>"Installa l'app"</b>. Premi il pulsante e l'app apparirà sulla schermata principale del telefono come una vera app, senza bisogno di App Store.</div>
-            </div>
-          </div>
-          <div class="istr-step">
-            <div class="istr-num">2</div>
-            <div class="istr-body">
-              <div class="istr-title">📍 Imposta la tua posizione</div>
-              <div class="istr-desc">Vai su <b>Backup → Posizione Default</b> e inserisci il tuo indirizzo di casa. Questa posizione verrà usata ogni volta che non usi il GPS.</div>
-            </div>
-          </div>
-          <div class="istr-step">
-            <div class="istr-num">3</div>
-            <div class="istr-body">
-              <div class="istr-title">🚨 Segnala un odore</div>
-              <div class="istr-desc">Quando senti un odore molesto, apri l'app e premi il grande pulsante arancione <b>"SEGNALA ODORE ORA"</b>. L'app salva automaticamente data, ora e posizione. Puoi aggiungere una nota prima di premere il pulsante.</div>
-            </div>
-          </div>
-          <div class="istr-step">
-            <div class="istr-num">4</div>
-            <div class="istr-body">
-              <div class="istr-title">📡 Usare il GPS</div>
-              <div class="istr-desc">Premi il pulsante <b>"📡 GPS"</b> per rilevare automaticamente dove ti trovi. Il telefono chiederà il permesso la prima volta — digli "Sì". Il GPS trova l'indirizzo più vicino alla tua posizione reale.</div>
-            </div>
-          </div>
-          <div class="istr-step">
-            <div class="istr-num">5</div>
-            <div class="istr-body">
-              <div class="istr-title">📋 Vedere lo storico</div>
-              <div class="istr-desc">Premi la scheda <b>"Storico"</b> in basso per vedere tutte le segnalazioni. Puoi filtrare per oggi, ultimi 7 giorni, ultimi 30 giorni, o vedere tutte. Puoi anche esportare un <b>PDF</b> con il report.</div>
-            </div>
-          </div>
-          <div class="istr-step">
-            <div class="istr-num">6</div>
-            <div class="istr-body">
-              <div class="istr-title">💾 Fare il backup</div>
-              <div class="istr-desc">I dati sono salvati <b>solo sul tuo telefono</b>. Se cambi telefono o cancelli l'app, li perdi. Vai su <b>"Backup"</b> ogni settimana e scarica il file di backup sul telefono o in cloud (Google Drive, iCloud).</div>
-            </div>
-          </div>
+        <div class="config-field">
+          <div class="config-label">Email comune <span style="color:var(--primary)">(verifica)</span></div>
+          <input class="config-input" id="cfgEmailComune" type="email" placeholder="info@comune.xxx.bg.it">
         </div>
-
-        <div class="istr-tip">
-          <span>💡</span>
-          <div><b>Consiglio:</b> Quando arriva il messaggio giallo "Backup consigliato!", non ignorarlo. Il backup serve per non perdere le segnalazioni raccolte nel tempo, che potrebbero essere utili per documenti ufficiali o segnalazioni agli enti competenti.</div>
+        <div class="config-field">
+          <div class="config-label">Indirizzo di default (posizione abituale)</div>
+          <input class="config-input" id="cfgIndirizzo" placeholder="Es: Via Roma 5, Bagnatica (BG)">
         </div>
-
-        <div style="height:20px;"></div>
+        <div class="config-section" style="margin-top:8px">&#128232; Destinatari email</div>
+        <div class="dest-manage" id="destManageList"></div>
+        <button class="btn-full btn-surface" style="margin-top:4px" onclick="openModal('modalAddDest')">&#10133; Aggiungi destinatario</button>
+        <button class="btn-full btn-primary-full" style="margin-top:8px;font-family:var(--fd);font-size:20px;letter-spacing:.5px;" onclick="salvaConfig()">SALVA CONFIGURAZIONE</button>
+        <div style="height:8px"></div>
       </div>
     </div>
-  </div><!-- /content -->
-</div><!-- /app -->
-
-<!-- TOAST -->
+  </div>
+</div>
 <div class="toast" id="toast"></div>
-
-<!-- MODAL POSIZIONE MANUALE -->
-<div class="modal-overlay" id="modalPos">
+<div class="modal-overlay" id="modalPosManu">
   <div class="modal">
-    <h2>✏️ Inserisci Posizione</h2>
-    <label>Indirizzo / Descrizione</label>
-    <input type="text" id="inputPosManu" placeholder="Es: Via Roma 5, Bagnatica (BG)" style="margin-bottom:16px;">
+    <h2>Posizione manuale</h2>
+    <label>Indirizzo o descrizione</label>
+    <input type="text" id="inputPosManu" placeholder="Es: Via Roma 5, Bagnatica">
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('modalPos')">Annulla</button>
+      <button class="btn-cancel" onclick="closeModal('modalPosManu')">Annulla</button>
       <button class="btn-confirm" onclick="salvaPosManu()">Salva</button>
     </div>
   </div>
 </div>
-
-<!-- MODAL POSIZIONE DEFAULT -->
-<div class="modal-overlay" id="modalDefault">
-  <div class="modal">
-    <h2>🏠 Posizione Default</h2>
-    <label>Indirizzo di casa / posizione abituale</label>
-    <input type="text" id="inputDefault" placeholder="Es: Via Roma 5, Bagnatica (BG)" style="margin-bottom:16px;">
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('modalDefault')">Annulla</button>
-      <button class="btn-confirm" onclick="salvaDefault()">Salva</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL PDF -->
 <div class="modal-overlay" id="modalPdf">
   <div class="modal">
-    <h2>📄 Esporta PDF</h2>
-    <div class="pdf-options">
-      <label class="pdf-option selected" onclick="selectPdf(this,'7')">
-        <input type="radio" name="pdfRange" value="7">
-        <span class="pdf-opt-ico">📅</span>
-        <div class="pdf-opt-body">
-          <div class="pdf-opt-title">Ultimi 7 giorni</div>
-          <div class="pdf-opt-sub" id="count7">— segnalazioni</div>
-        </div>
-      </label>
-      <label class="pdf-option" onclick="selectPdf(this,'30')">
-        <input type="radio" name="pdfRange" value="30">
-        <span class="pdf-opt-ico">🗓️</span>
-        <div class="pdf-opt-body">
-          <div class="pdf-opt-title">Ultimi 30 giorni</div>
-          <div class="pdf-opt-sub" id="count30">— segnalazioni</div>
-        </div>
-      </label>
-      <label class="pdf-option" onclick="selectPdf(this,'tutti')">
-        <input type="radio" name="pdfRange" value="tutti">
-        <span class="pdf-opt-ico">📂</span>
-        <div class="pdf-opt-body">
-          <div class="pdf-opt-title">Tutte le segnalazioni</div>
-          <div class="pdf-opt-sub" id="countTutti">— segnalazioni</div>
-        </div>
-      </label>
+    <h2>Esporta PDF</h2>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+      <div class="periodo-opt sel" id="mpdf7" onclick="selPdfRange('7',this)" style="text-align:left;padding:11px 13px;display:flex;align-items:center;gap:10px;border-radius:10px">
+        <span style="font-size:20px">&#128197;</span><div><div style="font-size:13px;font-weight:700;color:var(--text)">Ultimi 7 giorni</div><div class="card-sub" id="mcount7">-- segnalazioni</div></div>
+      </div>
+      <div class="periodo-opt" id="mpdf30" onclick="selPdfRange('30',this)" style="text-align:left;padding:11px 13px;display:flex;align-items:center;gap:10px;border-radius:10px">
+        <span style="font-size:20px">&#128467;&#65039;</span><div><div style="font-size:13px;font-weight:700;color:var(--text)">Ultimi 30 giorni</div><div class="card-sub" id="mcount30">-- segnalazioni</div></div>
+      </div>
+      <div class="periodo-opt" id="mpdfAll" onclick="selPdfRange('tutti',this)" style="text-align:left;padding:11px 13px;display:flex;align-items:center;gap:10px;border-radius:10px">
+        <span style="font-size:20px">&#128194;</span><div><div style="font-size:13px;font-weight:700;color:var(--text)">Tutte le segnalazioni</div><div class="card-sub" id="mcountAll">-- segnalazioni</div></div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modalPdf')">Annulla</button>
-      <button class="btn-confirm" style="background:#dc2626;" onclick="generaPDF()">📄 Genera PDF</button>
+      <button class="btn-confirm" style="background:#dc2626" onclick="generaPDFStorico()">Genera PDF</button>
     </div>
   </div>
 </div>
-
-<!-- MODAL CONFIRM CLEAR -->
 <div class="modal-overlay" id="modalClear">
   <div class="modal">
-    <h2>⚠️ Attenzione</h2>
-    <div class="confirm-msg">Stai per cancellare <strong>tutte le segnalazioni</strong>. Questa azione non può essere annullata.<br><br>Assicurati di aver fatto un backup prima.</div>
+    <h2>Attenzione</h2>
+    <div class="confirm-msg">Stai per cancellare <strong>tutte le segnalazioni</strong>. Questa azione non puo' essere annullata.</div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modalClear')">Annulla</button>
-      <button class="btn-delete" onclick="cancellatutto()">🗑️ Sì, cancella tutto</button>
+      <button class="btn-delete" onclick="cancellatutto()">Si, cancella tutto</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalAddDest">
+  <div class="modal">
+    <h2>Nuovo destinatario</h2>
+    <label>Nome ente</label>
+    <input type="text" id="addDestNome" placeholder="Es: ARPA Lombardia">
+    <label>Indirizzo email</label>
+    <input type="email" id="addDestEmail" placeholder="email@ente.it">
+    <label>Tipo</label>
+    <select id="addDestTipo" style="margin-bottom:12px">
+      <option value="istituzione">Istituzione</option>
+      <option value="comune">Comune</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modalAddDest')">Annulla</button>
+      <button class="btn-confirm" onclick="aggiungiDest()">Aggiungi</button>
     </div>
   </div>
 </div>
 
 <script>
-// ─── STATO ───
-let segnalazioni = [];
-let posCorrente = { text: null, lat: null, lng: null };
-let pdfRangeSelezionato = '7';
-let deferredInstallPrompt = null;
-
-// ─── INIT ───
-window.addEventListener('load', () => {
-  caricaDati();
-  aggiornaUI();
-  checkBackupBanner();
-  registraSW();
+const COMUNI_DB={
+  'Bagnatica':'info@pec.comune.bagnatica.bg.it',
+  "San Paolo d'Argon":'comune@comune.sanpaolodargon.bg.it',
+  'Gorlago':'comune.gorlago.bg@halleycert.it',
+  "Albano Sant'Alessandro":'info@comune.albano.bg.it',
+  'Montello':'comunemontello@halleycert.it',
+  'Costa di Mezzate':'amministrazione@comune.costadimezzate.bg.it',
+  'Brusaporto':'info@comune.brusaporto.bg.it',
+  'Trescore Balneario':'protocollo@comune.trescore-balneario.bg.it',
+  'Cenate Sotto':'segreteria@comune.cenatesotto.bg.it'
+};
+const ISTITUZIONI_DEFAULT=[
+  {nome:'Provincia di Bergamo',email:'protocollo@pec.provincia.bergamo.it',tipo:'istituzione',attivo:true},
+  {nome:'Prefettura di Bergamo',email:'prefettura.bergamo@interno.it',tipo:'istituzione',attivo:false},
+  {nome:'ASST Bergamo Est',email:'urp@asst-bergamoest.it',tipo:'istituzione',attivo:false},
+  {nome:'ATS Bergamo',email:'protocollo@ats-bg.it',tipo:'istituzione',attivo:true}
+];
+let segnalazioni=[],posCorrente={text:null,lat:null,lng:null},config=null,pdfRangeStorico='7',periodoInvia='7';
+window.addEventListener('load',()=>{
+  caricaDati();aggiornaUI();checkBackupBanner();
+  if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  if(!config||!config.onboardingCompleto)avviaOnboarding();else caricaPosDefault();
 });
-
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  document.getElementById('installBanner').classList.add('show');
-  document.getElementById('installBtn').onclick = () => {
-    deferredInstallPrompt.prompt();
-    deferredInstallPrompt.userChoice.then(() => {
-      document.getElementById('installBanner').classList.remove('show');
-    });
-  };
-});
-
-function registraSW() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+function caricaDati(){
+  segnalazioni=JSON.parse(localStorage.getItem('odori_segnalazioni')||'[]');
+  const raw=localStorage.getItem('odori_config');
+  config=raw?JSON.parse(raw):null;
+}
+function salvaDati(){localStorage.setItem('odori_segnalazioni',JSON.stringify(segnalazioni));}
+function salvaConfigStorage(){localStorage.setItem('odori_config',JSON.stringify(config));}
+function caricaPosDefault(){
+  if(config&&config.indirizzo)mostraPosizione(config.indirizzo,null,null);
+  else document.getElementById('posValue').textContent='Nessuna posizione — usa GPS o imposta in Config';
+}
+let obStep=0;
+const OB_STEPS=[
+  {title:'&#128075; Chi sei?',sub:"I tuoi dati verranno usati nelle email di segnalazione"},
+  {title:'&#128205; Dove abiti?',sub:'Imposta il comune e la posizione abituale'},
+  {title:'&#128232; Destinatari email',sub:'Seleziona a chi inviare le segnalazioni'},
+  {title:'&#10003; Riepilogo',sub:'Controlla i dati e conferma'}
+];
+let obData={nome:'',cognome:'',email:'',comune:'',emailComune:'',indirizzo:'',destinatari:[]};
+function avviaOnboarding(){
+  obData.destinatari=ISTITUZIONI_DEFAULT.map(d=>({...d}));
+  obStep=0;
+  document.getElementById('ob-back').style.display='none';
+  renderObStep();
+  document.getElementById('onboarding').classList.add('show');
+}
+function renderObStep(){
+  const s=OB_STEPS[obStep];
+  document.getElementById('ob-title').innerHTML=s.title;
+  document.getElementById('ob-sub').textContent=s.sub;
+  document.getElementById('ob-next').textContent=obStep<3?'AVANTI':'INIZIA';
+  document.getElementById('ob-back').style.display=obStep===0?'none':'block';
+  for(let i=0;i<4;i++)document.getElementById('dot'+i).classList.toggle('done',i<=obStep);
+  const body=document.getElementById('ob-body');
+  if(obStep===0){
+    body.innerHTML=`<div class="ob-field"><div class="ob-label">Nome *</div><input class="ob-input" id="ob_nome" placeholder="Mario" value="${obData.nome}"></div>
+    <div class="ob-field"><div class="ob-label">Cognome *</div><input class="ob-input" id="ob_cognome" placeholder="Rossi" value="${obData.cognome}"></div>
+    <div class="ob-field"><div class="ob-label">La tua email (mittente)</div><input class="ob-input" id="ob_email" type="email" placeholder="mario.rossi@email.it" value="${obData.email}"></div>`;
+  }else if(obStep===1){
+    const opts=Object.keys(COMUNI_DB).map(c=>`<option value="${c}" ${obData.comune===c?'selected':''}>${c}</option>`).join('');
+    body.innerHTML=`<div class="ob-field"><div class="ob-label">Comune di residenza *</div>
+      <select class="ob-input" id="ob_comune" onchange="obComuneChange()"><option value="">-- Seleziona --</option>${opts}<option value="altro" ${obData.comune==='altro'?'selected':''}>Altro comune...</option></select></div>
+      <div class="ob-field" id="ob_email_comune_row" style="display:${obData.comune?'flex':'none'};flex-direction:column;gap:5px">
+        <div class="ob-label">Email comune <span style="color:var(--primary);font-size:10px">(auto-compilata, verifica)</span></div>
+        <input class="ob-input" id="ob_email_comune" type="email" placeholder="info@comune.xxx.bg.it" value="${obData.emailComune}"></div>
+      <div class="ob-field"><div class="ob-label">Indirizzo / posizione di default</div>
+        <input class="ob-input" id="ob_indirizzo" placeholder="Es: Via Roma 5, Bagnatica (BG)" value="${obData.indirizzo}"></div>`;
+    if(obData.comune)obComuneChange();
+  }else if(obStep===2){
+    body.innerHTML=`<div class="ob-dest-list" id="ob_dest_list"></div>
+      <div class="info-box" style="margin-top:4px"><span>&#8505;&#65039;</span><div>Puoi modificare questi destinatari in qualsiasi momento da Config.</div></div>`;
+    renderObDestList();
+  }else{
+    const destSel=obData.destinatari.filter(d=>d.attivo);
+    body.innerHTML=`<div class="ob-summary">
+      <div class="ob-sum-row"><span class="ob-sum-key">Nome</span><span class="ob-sum-val">${obData.nome} ${obData.cognome}</span></div>
+      <div class="ob-sum-row"><span class="ob-sum-key">Email</span><span class="ob-sum-val">${obData.email||'--'}</span></div>
+      <div class="ob-sum-row"><span class="ob-sum-key">Comune</span><span class="ob-sum-val">${obData.comune||'--'}</span></div>
+      <div class="ob-sum-row"><span class="ob-sum-key">Email comune</span><span class="ob-sum-val">${obData.emailComune||'--'}</span></div>
+      <div class="ob-sum-row"><span class="ob-sum-key">Posizione</span><span class="ob-sum-val">${obData.indirizzo||'--'}</span></div>
+      <div class="ob-sum-row"><span class="ob-sum-key">Destinatari (${destSel.length})</span><span class="ob-sum-val">${destSel.map(d=>d.nome).join(', ')||'--'}</span></div>
+    </div><div class="info-box" style="margin-top:8px"><span>&#10003;</span><div>Tutto pronto! Premi <strong>INIZIA</strong> per cominciare.</div></div>`;
   }
 }
-
-// ─── STORAGE ───
-function caricaDati() {
-  segnalazioni = JSON.parse(localStorage.getItem('odori_segnalazioni') || '[]');
-  const defPos = localStorage.getItem('odori_default_pos');
-  if (defPos) {
-    posCorrente = JSON.parse(defPos);
-    mostraPosizione(posCorrente.text, posCorrente.lat, posCorrente.lng);
-  } else {
-    document.getElementById('posValue').textContent = 'Nessuna posizione — imposta la posizione default o usa il GPS';
-  }
-  aggiornaDefaultLabel();
+function obComuneChange(){
+  const sel=document.getElementById('ob_comune');if(!sel)return;
+  const val=sel.value,row=document.getElementById('ob_email_comune_row'),inp=document.getElementById('ob_email_comune');
+  if(!val){row.style.display='none';return;}
+  row.style.display='flex';row.style.flexDirection='column';row.style.gap='5px';
+  if(COMUNI_DB[val])inp.value=COMUNI_DB[val];else inp.value='';
 }
-
-function salvaDati() {
-  localStorage.setItem('odori_segnalazioni', JSON.stringify(segnalazioni));
+function renderObDestList(){
+  const el=document.getElementById('ob_dest_list');if(!el)return;
+  el.innerHTML=obData.destinatari.map((d,i)=>`<div class="ob-dest-item ${d.attivo?'checked':''}" onclick="toggleObDest(${i})">
+    <div class="ob-check">${d.attivo?'&#10003;':''}</div>
+    <div style="flex:1;min-width:0"><div class="ob-dest-nome">${d.nome}</div><div class="ob-dest-email">${d.email}</div></div>
+    <span class="ob-dest-tag ${d.tipo==='comune'?'tag-comune':'tag-istituzione'}">${d.tipo==='comune'?'COMUNE':'ENTE'}</span>
+  </div>`).join('');
 }
-
-// ─── POSIZIONE ───
-function rilevaPosizione() {
-  const btn = document.querySelector('.btn-sm.primary');
-  if (btn) btn.textContent = '⏳ Ricerca...';
-  document.getElementById('posValue').textContent = 'Rilevamento GPS in corso...';
-  document.getElementById('posCoords').textContent = '';
-
-  if (!navigator.geolocation) {
-    showToast('GPS non disponibile sul dispositivo', true);
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    async pos => {
-      const { latitude: lat, longitude: lng } = pos.coords;
-      document.getElementById('posCoords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      document.getElementById('posValue').textContent = 'Indirizzo in ricerca...';
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=it`);
-        const d = await r.json();
-        const addr = formattaIndirizzo(d.address) || d.display_name || 'Posizione GPS rilevata';
-        mostraPosizione(addr, lat, lng);
-      } catch {
-        mostraPosizione('Posizione GPS (indirizzo non disponibile)', lat, lng);
-      }
-      if (btn) btn.textContent = '📡 GPS';
-    },
-    err => {
-      let msg = 'Impossibile rilevare la posizione';
-      if (err.code === 1) msg = 'Permesso GPS negato — vai nelle impostazioni del telefono';
-      if (err.code === 3) msg = 'GPS troppo lento — riprova in uno spazio aperto';
-      showToast(msg, true);
-      document.getElementById('posValue').textContent = 'GPS non disponibile';
-      if (btn) btn.textContent = '📡 GPS';
-    },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-  );
+function toggleObDest(i){obData.destinatari[i].attivo=!obData.destinatari[i].attivo;renderObDestList();}
+function obBack(){if(obStep===0)return;obSalvaStep();obStep--;renderObStep();}
+function obNext(){if(!obValidaStep())return;obSalvaStep();if(obStep<3){obStep++;renderObStep();return;}
+  config={nome:obData.nome,cognome:obData.cognome,email:obData.email,comune:obData.comune,emailComune:obData.emailComune,indirizzo:obData.indirizzo,destinatari:obData.destinatari,onboardingCompleto:true};
+  salvaConfigStorage();document.getElementById('onboarding').classList.remove('show');
+  caricaPosDefault();aggiornaUI();populaConfig();showToast('Configurazione salvata!');
 }
-
-function formattaIndirizzo(addr) {
-  if (!addr) return null;
-  const via = addr.road || addr.pedestrian || addr.path || '';
-  const num = addr.house_number || '';
-  const citta = addr.city || addr.town || addr.village || addr.municipality || '';
-  const prov = addr.county || addr.state || '';
-  const parts = [via + (num ? ' ' + num : ''), citta, prov].filter(Boolean);
-  return parts.join(', ');
+function obValidaStep(){
+  if(obStep===0){const n=document.getElementById('ob_nome')?.value.trim(),c=document.getElementById('ob_cognome')?.value.trim();if(!n||!c){showToast('Inserisci nome e cognome',true);return false;}}
+  if(obStep===1){const c=document.getElementById('ob_comune')?.value,e=document.getElementById('ob_email_comune')?.value.trim();if(!c){showToast('Seleziona il comune',true);return false;}if(!e){showToast("Inserisci l'email del comune",true);return false;}}
+  return true;
 }
-
-function mostraPosizione(text, lat, lng) {
-  posCorrente = { text, lat, lng };
-  document.getElementById('posValue').textContent = text || 'Posizione impostata';
-  if (lat && lng) {
-    document.getElementById('posCoords').textContent = `📡 ${parseFloat(lat).toFixed(5)}, ${parseFloat(lng).toFixed(5)}`;
+function obSalvaStep(){
+  if(obStep===0){obData.nome=document.getElementById('ob_nome')?.value.trim()||obData.nome;obData.cognome=document.getElementById('ob_cognome')?.value.trim()||obData.cognome;obData.email=document.getElementById('ob_email')?.value.trim()||obData.email;}
+  else if(obStep===1){
+    obData.comune=document.getElementById('ob_comune')?.value||obData.comune;
+    obData.emailComune=document.getElementById('ob_email_comune')?.value.trim()||obData.emailComune;
+    obData.indirizzo=document.getElementById('ob_indirizzo')?.value.trim()||obData.indirizzo;
+    if(obData.emailComune&&obData.comune){const ex=obData.destinatari.find(d=>d.tipo==='comune');if(!ex)obData.destinatari.push({nome:'Comune di '+obData.comune,email:obData.emailComune,tipo:'comune',attivo:true});else{ex.nome='Comune di '+obData.comune;ex.email=obData.emailComune;ex.attivo=true;}}
   }
 }
-
-function openModalPosizione() {
-  document.getElementById('inputPosManu').value = posCorrente.text || '';
-  openModal('modalPos');
+function populaConfig(){
+  if(!config)return;
+  document.getElementById('cfgNome').value=config.nome||'';
+  document.getElementById('cfgCognome').value=config.cognome||'';
+  document.getElementById('cfgEmail').value=config.email||'';
+  document.getElementById('cfgComune').value=config.comune||'';
+  document.getElementById('cfgEmailComune').value=config.emailComune||'';
+  document.getElementById('cfgIndirizzo').value=config.indirizzo||'';
+  renderDestManage();
+}
+function onComuneChange(){
+  const val=document.getElementById('cfgComune').value,inp=document.getElementById('cfgEmailComune');
+  if(COMUNI_DB[val])inp.value=COMUNI_DB[val];else if(val!=='altro')inp.value='';
+}
+function renderDestManage(){
+  if(!config)return;const el=document.getElementById('destManageList');if(!el)return;
+  el.innerHTML=(config.destinatari||[]).map((d,i)=>`<div class="dest-manage-item">
+    <div class="dm-info"><div class="dm-nome">${d.nome} <span class="dest-tag ${d.tipo==='comune'?'tag-comune':'tag-istituzione'}">${d.tipo==='comune'?'COMUNE':'ENTE'}</span></div><div class="dm-email">${d.email}</div></div>
+    <button class="dm-del" onclick="rimuoviDest(${i})">&#128465;&#65039;</button>
+  </div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:8px 0">Nessun destinatario configurato</div>';
+}
+function rimuoviDest(i){if(!confirm('Rimuovere?'))return;config.destinatari.splice(i,1);salvaConfigStorage();renderDestManage();renderInviaDestList();}
+function aggiungiDest(){
+  const nome=document.getElementById('addDestNome').value.trim(),email=document.getElementById('addDestEmail').value.trim(),tipo=document.getElementById('addDestTipo').value;
+  if(!nome||!email){showToast('Compila nome ed email',true);return;}
+  if(!config)config={destinatari:[]};if(!config.destinatari)config.destinatari=[];
+  config.destinatari.push({nome,email,tipo,attivo:true});salvaConfigStorage();renderDestManage();renderInviaDestList();
+  document.getElementById('addDestNome').value='';document.getElementById('addDestEmail').value='';
+  closeModal('modalAddDest');showToast('Destinatario aggiunto');
+}
+function salvaConfig(){
+  if(!config)config={destinatari:[]};
+  const comune=document.getElementById('cfgComune').value,emailC=document.getElementById('cfgEmailComune').value.trim();
+  config.nome=document.getElementById('cfgNome').value.trim();config.cognome=document.getElementById('cfgCognome').value.trim();
+  config.email=document.getElementById('cfgEmail').value.trim();config.comune=comune;config.emailComune=emailC;
+  config.indirizzo=document.getElementById('cfgIndirizzo').value.trim();config.onboardingCompleto=true;
+  if(comune&&emailC){const idx=config.destinatari.findIndex(d=>d.tipo==='comune');const entry={nome:'Comune di '+comune,email:emailC,tipo:'comune',attivo:true};if(idx>=0)config.destinatari[idx]=entry;else config.destinatari.push(entry);}
+  salvaConfigStorage();caricaPosDefault();renderDestManage();renderInviaDestList();showToast('Configurazione salvata!');
+}
+function rilevaPosizione(){
+  document.getElementById('posValue').textContent='Rilevamento GPS...';
+  if(!navigator.geolocation){showToast('GPS non disponibile',true);return;}
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const{latitude:lat,longitude:lng}=pos.coords;
+    document.getElementById('posCoords').textContent=lat.toFixed(5)+', '+lng.toFixed(5);
+    try{const r=await fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&accept-language=it');const d=await r.json();mostraPosizione(formattaIndirizzo(d.address)||d.display_name||'Posizione GPS',lat,lng);}
+    catch{mostraPosizione('Posizione GPS',lat,lng);}
+  },err=>{const m=err.code===1?'Permesso GPS negato':err.code===3?'GPS troppo lento':'GPS non disponibile';showToast(m,true);document.getElementById('posValue').textContent='GPS non disponibile';},
+  {enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+function formattaIndirizzo(a){if(!a)return null;const v=a.road||a.pedestrian||a.path||'',n=a.house_number||'',c=a.city||a.town||a.village||a.municipality||'',p=a.county||'';return[v+(n?' '+n:''),c,p].filter(Boolean).join(', ');}
+function mostraPosizione(text,lat,lng){posCorrente={text,lat,lng};document.getElementById('posValue').textContent=text||'Posizione impostata';document.getElementById('posCoords').textContent=(lat&&lng)?'GPS: '+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5):'';}
+function openModalPosManu(){document.getElementById('inputPosManu').value=posCorrente.text||'';openModal('modalPosManu');}
+function salvaPosManu(){const v=document.getElementById('inputPosManu').value.trim();if(!v){showToast('Inserisci un indirizzo',true);return;}mostraPosizione(v,null,null);closeModal('modalPosManu');}
+function usaPosizioneDefault(){if(config&&config.indirizzo){mostraPosizione(config.indirizzo,null,null);showToast('Posizione default ripristinata');}else showToast('Imposta la posizione in Config',true);}
+function segnalaOdore(){
+  if(!posCorrente.text){showToast('Imposta prima una posizione',true);return;}
+  const btn=document.getElementById('btnSegnala');btn.disabled=true;btn.innerHTML='<span class="btn-ico">&#10003;</span>SEGNALATO!';
+  const note=document.getElementById('noteExtra').value.trim(),now=new Date();
+  segnalazioni.unshift({id:Date.now(),data:formatData(now),ora:formatOra(now),timestamp:now.toISOString(),posizione:posCorrente.text,lat:posCorrente.lat,lng:posCorrente.lng,note:note||''});
+  salvaDati();document.getElementById('noteExtra').value='';aggiornaUI();showToast('Segnalazione salvata!');
+  setTimeout(()=>{btn.disabled=false;btn.innerHTML='<span class="btn-ico">&#128680;</span>SEGNALA ODORE ORA';},2000);
+}
+function aggiornaUI(){
+  const oggi=formatData(new Date()),oggiN=segnalazioni.filter(s=>s.data===oggi).length;
+  document.getElementById('countTotale').textContent=segnalazioni.length;document.getElementById('countOggi').textContent=oggiN;
+  const st=document.getElementById('statTot'),so=document.getElementById('statOggi');
+  if(st)st.textContent=segnalazioni.length;if(so)so.textContent=oggiN;
+  renderLista(filtroCorrente);aggiornaCountsInvia();aggiornaUltimoBackup();
+}
+let filtroCorrente='tutti';
+function setFilter(f,el){filtroCorrente=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderLista(f);}
+function filterSegnalazioni(f){
+  if(f==='tutti')return segnalazioni;
+  if(f==='oggi'){const o=formatData(new Date());return segnalazioni.filter(s=>s.data===o);}
+  const d=parseInt(f),c=new Date();c.setDate(c.getDate()-d);return segnalazioni.filter(s=>new Date(s.timestamp)>=c);
+}
+function renderLista(f){
+  const lista=document.getElementById('listaSegnalazioni'),filtered=filterSegnalazioni(f);
+  if(!filtered.length){lista.innerHTML='<div class="empty-state"><div class="empty-ico">&#128219;</div><p>Nessuna segnalazione</p><span>Premi SEGNALA ODORE ORA nella Home</span></div>';return;}
+  lista.innerHTML=filtered.map(s=>`<div class="seg-card">
+    <div class="seg-left"><div class="seg-num">#${segnalazioni.indexOf(s)+1}</div><div class="seg-dot"></div></div>
+    <div class="seg-body"><div class="seg-datetime">&#128197; ${s.data} &#8212; ${s.ora}</div>
+    <div class="seg-pos">&#128205; ${s.posizione}</div>
+    ${s.lat?'<div class="seg-coords">GPS: '+parseFloat(s.lat).toFixed(5)+', '+parseFloat(s.lng).toFixed(5)+'</div>':''}
+    ${s.note?'<div class="seg-note">&#128221; '+s.note+'</div>':''}</div>
+    <button class="seg-del" onclick="eliminaSegnalazione(${s.id})">&#128465;</button></div>`).join('');
+}
+function eliminaSegnalazione(id){if(!confirm('Eliminare?'))return;segnalazioni=segnalazioni.filter(s=>s.id!==id);salvaDati();aggiornaUI();}
+function aggiornaCountsInvia(){document.getElementById('pn7').textContent=filterSegnalazioni('7').length;document.getElementById('pn30').textContent=filterSegnalazioni('30').length;document.getElementById('pnAll').textContent=segnalazioni.length;}
+function selPeriodo(p){periodoInvia=p;['7','30','tutti'].forEach(x=>{const id=x==='tutti'?'poAll':'po'+x;document.getElementById(id)?.classList.toggle('sel',x===p);});}
+function renderInviaDestList(){
+  const el=document.getElementById('inviaDestList');if(!el||!config)return;
+  const dests=config.destinatari||[];
+  if(!dests.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">Nessun destinatario -- aggiungili in Config</div>';return;}
+  el.innerHTML=dests.map((d,i)=>`<div class="dest-item ${d.attivo?'checked':''}" onclick="toggleInviaDest(${i})">
+    <div class="dest-check">${d.attivo?'&#10003;':''}</div>
+    <div class="dest-info"><div class="dest-nome">${d.nome}</div><div class="dest-email">${d.email}</div></div>
+    <span class="dest-tag ${d.tipo==='comune'?'tag-comune':'tag-istituzione'}">${d.tipo==='comune'?'COMUNE':'ENTE'}</span>
+  </div>`).join('');
+}
+function toggleInviaDest(i){config.destinatari[i].attivo=!config.destinatari[i].attivo;salvaConfigStorage();renderInviaDestList();}
+function generaPDFInvia(){
+  const f=filterSegnalazioni(periodoInvia);if(!f.length){showToast('Nessuna segnalazione nel periodo',true);return;}
+  generaPDFDoc(f,periodoInvia);showToast('PDF scaricato!');
 }
 
-function salvaPosManu() {
-  const v = document.getElementById('inputPosManu').value.trim();
-  if (!v) { showToast('Inserisci un indirizzo', true); return; }
-  mostraPosizione(v, null, null);
-  closeModal('modalPos');
-}
+async function condividiReport(){
+  if(!config){showToast('Configura prima i dati in Config',true);return;}
+  const dest=(config.destinatari||[]).filter(d=>d.attivo);
+  const f=filterSegnalazioni(periodoInvia);
+  if(!f.length){showToast('Nessuna segnalazione nel periodo',true);return;}
 
-function usaPosizioneDefault() {
-  const defPos = localStorage.getItem('odori_default_pos');
-  if (!defPos) { showToast('Nessuna posizione default — impostala nel Backup', true); return; }
-  const d = JSON.parse(defPos);
-  mostraPosizione(d.text, d.lat, d.lng);
-  showToast('Posizione default ripristinata');
-}
+  // Prepara il testo email e copialo negli appunti
+  const testoEmail=costruisciTestoEmail(f);
+  try{await navigator.clipboard.writeText(testoEmail);}catch(e){}
 
-function openModalDefault() {
-  const defPos = localStorage.getItem('odori_default_pos');
-  document.getElementById('inputDefault').value = defPos ? JSON.parse(defPos).text || '' : '';
-  openModal('modalDefault');
-}
+  // Genera PDF come blob
+  const blob=generaPDFBlob(f,periodoInvia);
+  const fileName='report-odori-'+formatDataFile()+'-'+getNextVersion()+'.pdf';
+  const pdfFile=new File([blob],fileName,{type:'application/pdf'});
 
-function salvaDefault() {
-  const v = document.getElementById('inputDefault').value.trim();
-  if (!v) { showToast('Inserisci un indirizzo', true); return; }
-  const d = { text: v, lat: null, lng: null };
-  localStorage.setItem('odori_default_pos', JSON.stringify(d));
-  aggiornaDefaultLabel();
-  showToast('Posizione default salvata ✓');
-  closeModal('modalDefault');
-}
-
-function aggiornaDefaultLabel() {
-  const defPos = localStorage.getItem('odori_default_pos');
-  const lbl = document.getElementById('defaultPosLabel');
-  if (lbl) lbl.textContent = defPos ? JSON.parse(defPos).text : 'Non impostata';
-}
-
-// ─── SEGNALAZIONE ───
-function segnalaOdore() {
-  const btn = document.getElementById('btnSegnala');
-  if (!posCorrente.text) {
-    showToast('Imposta prima una posizione (GPS o manuale)', true);
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="btn-ico">✅</span> SEGNALATO!';
-
-  const note = document.getElementById('noteExtra').value.trim();
-  const now = new Date();
-  const seg = {
-    id: Date.now(),
-    data: formatData(now),
-    ora: formatOra(now),
-    timestamp: now.toISOString(),
-    posizione: posCorrente.text,
-    lat: posCorrente.lat,
-    lng: posCorrente.lng,
-    note: note || ''
-  };
-  segnalazioni.unshift(seg);
-  salvaDati();
-  aggiornaUI();
-  document.getElementById('noteExtra').value = '';
-  showToast('✅ Segnalazione salvata!');
-
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.innerHTML = '<span class="btn-ico">🚨</span> SEGNALA ODORE ORA';
-  }, 2000);
-}
-
-// ─── UI ───
-function aggiornaUI() {
-  const oggi = formatData(new Date());
-  const oggiSeg = segnalazioni.filter(s => s.data === oggi).length;
-  document.getElementById('countTotale').textContent = segnalazioni.length;
-  document.getElementById('countOggi').textContent = oggiSeg;
-  if (document.getElementById('statTot')) {
-    document.getElementById('statTot').textContent = segnalazioni.length;
-    document.getElementById('statOggi').textContent = oggiSeg;
-  }
-  renderLista('tutti');
-  aggiornaUltimoBackup();
-}
-
-let filtroCorrente = 'tutti';
-function setFilter(f, el) {
-  filtroCorrente = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  renderLista(f);
-}
-
-function filterSegnalazioni(f) {
-  if (f === 'tutti') return segnalazioni;
-  if (f === 'oggi') {
-    const oggi = formatData(new Date());
-    return segnalazioni.filter(s => s.data === oggi);
-  }
-  const days = parseInt(f);
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
-  return segnalazioni.filter(s => new Date(s.timestamp) >= cutoff);
-}
-
-function renderLista(f) {
-  const lista = document.getElementById('listaSegnalazioni');
-  const filtered = filterSegnalazioni(f);
-  if (filtered.length === 0) {
-    lista.innerHTML = `<div class="empty-state">
-      <div class="empty-ico">📭</div>
-      <p>Nessuna segnalazione</p>
-      <span>Premi "SEGNALA ODORE ORA" nella Home quando senti un odore</span>
-    </div>`;
-    return;
-  }
-  lista.innerHTML = filtered.map((s, i) => `
-    <div class="seg-card">
-      <div class="seg-left">
-        <div class="seg-num">#${segnalazioni.indexOf(s) + 1}</div>
-        <div class="seg-dot"></div>
-      </div>
-      <div class="seg-body">
-        <div class="seg-datetime">🗓️ ${s.data} — ⏰ ${s.ora}</div>
-        <div class="seg-pos">📍 ${s.posizione}</div>
-        ${s.lat ? `<div class="seg-coords">GPS: ${parseFloat(s.lat).toFixed(5)}, ${parseFloat(s.lng).toFixed(5)}</div>` : ''}
-        ${s.note ? `<div class="seg-coords" style="color:var(--text2);margin-top:4px;">📝 ${s.note}</div>` : ''}
-      </div>
-      <button class="seg-del" onclick="eliminaSegnalazione(${s.id})" title="Elimina">🗑️</button>
-    </div>
-  `).join('');
-}
-
-function eliminaSegnalazione(id) {
-  if (!confirm('Eliminare questa segnalazione?')) return;
-  segnalazioni = segnalazioni.filter(s => s.id !== id);
-  salvaDati();
-  aggiornaUI();
-  renderLista(filtroCorrente);
-}
-
-// ─── BACKUP ───
-function esportaBackup() {
-  const data = {
-    export_date: new Date().toISOString(),
-    version: '1.0',
-    segnalazioni
-  };
-  scaricaFile(JSON.stringify(data, null, 2), `backup-odori-${formatDataFile()}.json`, 'application/json');
-  localStorage.setItem('odori_ultimo_backup', new Date().toISOString());
-  aggiornaUltimoBackup();
-  showToast('💾 Backup scaricato!');
-}
-
-function esportaCSV() {
-  let csv = 'N°,Data,Ora,Posizione,Latitudine,Longitudine,Note\n';
-  segnalazioni.forEach((s, i) => {
-    csv += `${i + 1},"${s.data}","${s.ora}","${s.posizione.replace(/"/g, '""')}","${s.lat || ''}","${s.lng || ''}","${(s.note || '').replace(/"/g, '""')}"\n`;
-  });
-  scaricaFile(csv, `segnalazioni-odori-${formatDataFile()}.csv`, 'text/csv;charset=utf-8;');
-  showToast('📊 CSV esportato!');
-}
-
-function ripristinaBackup(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      const nuove = data.segnalazioni || data;
-      if (!Array.isArray(nuove)) throw new Error();
-      if (!confirm(`Trovate ${nuove.length} segnalazioni. Vuoi aggiungerle a quelle esistenti?`)) {
-        input.value = ''; return;
-      }
-      const esistenti = segnalazioni.map(s => s.id);
-      const daNaggiungere = nuove.filter(s => !esistenti.includes(s.id));
-      segnalazioni = [...segnalazioni, ...daNaggiungere].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      salvaDati();
-      aggiornaUI();
-      showToast(`✅ Ripristinate ${daNaggiungere.length} segnalazioni`);
-    } catch {
-      showToast('File non valido', true);
+  // Prova Web Share API con file
+  if(navigator.canShare&&navigator.canShare({files:[pdfFile]})){
+    try{
+      await navigator.share({
+        title:'Segnalazione odori molesti - '+formatData(new Date()),
+        text:'Report allegato. Testo email copiato negli appunti: incollalo nel campo messaggio.',
+        files:[pdfFile]
+      });
+      return;
+    }catch(e){
+      if(e.name==='AbortError')return; // utente ha chiuso il pannello
+      // fallthrough al download
     }
-    input.value = '';
-  };
-  reader.readAsText(file);
-}
-
-function openConfirmClear() {
-  openModal('modalClear');
-}
-
-function cancellatutto() {
-  segnalazioni = [];
-  salvaDati();
-  aggiornaUI();
-  closeModal('modalClear');
-  showToast('Dati cancellati');
-}
-
-// Fix typo in global scope
-function cancellatutto() {
-  segnalazioni = [];
-  salvaDati();
-  aggiornaUI();
-  closeModal('modalClear');
-  showToast('Dati cancellati');
-}
-window.cancellatutto = cancellatutto;
-
-function aggiornaUltimoBackup() {
-  const el = document.getElementById('ultimoBackup');
-  if (!el) return;
-  const ub = localStorage.getItem('odori_ultimo_backup');
-  el.textContent = ub ? `Ultimo backup: ${formatData(new Date(ub))} alle ${formatOra(new Date(ub))}` : 'Ultimo backup: mai effettuato';
-}
-
-function checkBackupBanner() {
-  const ub = localStorage.getItem('odori_ultimo_backup');
-  if (!ub) {
-    if (segnalazioni.length > 0) document.getElementById('backupBanner').classList.add('show');
-    return;
   }
-  const diff = (Date.now() - new Date(ub).getTime()) / (1000 * 60 * 60 * 24);
-  if (diff >= 7) document.getElementById('backupBanner').classList.add('show');
+  // Fallback: scarica il PDF
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=fileName;a.click();
+  showToast('Web Share non disponibile: PDF scaricato');
+  // Prova comunque ad aprire il mailto
+  setTimeout(()=>apriEmail(),800);
 }
 
-function dismissBanner() {
-  document.getElementById('backupBanner').classList.remove('show');
-  localStorage.setItem('odori_banner_dismissed', new Date().toISOString());
+function costruisciTestoEmail(filtered){
+  if(!config)return '';
+  const lp=periodoInvia==='tutti'?'tutte le segnalazioni':'ultimi '+periodoInvia+' giorni';
+  let body='Gentili responsabili,
+
+';
+  body+='mi chiamo '+config.nome+' '+config.cognome;
+  if(config.comune)body+=', residente a '+config.comune;
+  body+='.
+
+Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati tramite apposita applicazione di monitoraggio.
+
+';
+  body+='Riepilogo segnalazioni ('+lp+'):
+';
+  body+='--------------------------------------------------
+';
+  filtered.forEach((s,i)=>{body+=(i+1)+'. '+s.data+' ore '+s.ora+' -- '+s.posizione;if(s.note)body+=' -- Note: '+s.note;body+='
+';});
+  body+='--------------------------------------------------
+';
+  body+='Totale: '+filtered.length+' segnalazioni
+
+';
+  body+='Si allega il report in formato PDF.
+
+In attesa di un vostro riscontro, rimango a disposizione.
+
+Cordiali saluti,
+'+config.nome+' '+config.cognome;
+  if(config.email)body+='
+'+config.email;
+  return body;
 }
 
-function goBackup() {
-  showPage('backup', document.querySelectorAll('.tab')[2]);
-  document.getElementById('backupBanner').classList.remove('show');
+function generaPDFBlob(filtered,range){
+  const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'a4'});
+  const labels={'7':'Ultimi 7 giorni','30':'Ultimi 30 giorni','tutti':'Tutte le segnalazioni','oggi':'Oggi'};
+  const mitt=config?config.nome+' '+config.cognome+(config.comune?' -- '+config.comune:''):'';
+  doc.setFillColor(15,23,42);doc.rect(0,0,210,44,'F');
+  doc.setTextColor(249,115,22);doc.setFontSize(20);doc.setFont('helvetica','bold');doc.text('REPORT SEGNALAZIONI ODORI',14,16);
+  doc.setTextColor(148,163,184);doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('Periodo: '+(labels[range]||range),14,25);doc.text('Generato il: '+formatData(new Date())+' ore '+formatOra(new Date()),14,31);
+  if(mitt)doc.text('Segnalante: '+mitt,14,37);doc.text('Totale: '+filtered.length+' segnalazioni',150,25);
+  doc.autoTable({startY:50,head:[['N','Data','Ora','Posizione','Note']],
+    body:filtered.map((s,i)=>[i+1,s.data,s.ora,s.posizione,s.note||'--']),
+    headStyles:{fillColor:[30,58,95],textColor:[241,245,249],fontStyle:'bold',fontSize:8},
+    bodyStyles:{fontSize:7.5,textColor:[40,40,40]},alternateRowStyles:{fillColor:[245,247,250]},
+    columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:23},2:{cellWidth:16},3:{cellWidth:100},4:{cellWidth:41}},
+    margin:{left:14,right:14}});
+  const tot=doc.internal.getNumberOfPages();
+  for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text('Pag. '+i+'/'+tot+' -- Segnala Odori',14,290);}
+  return doc.output('blob');
 }
-
-// ─── PDF ───
-function openPdfModal() {
-  const s7 = filterSegnalazioni('7').length;
-  const s30 = filterSegnalazioni('30').length;
-  const stot = segnalazioni.length;
-  document.getElementById('count7').textContent = `${s7} segnalazione${s7 !== 1 ? 'i' : ''}`;
-  document.getElementById('count30').textContent = `${s30} segnalazione${s30 !== 1 ? 'i' : ''}`;
-  document.getElementById('countTutti').textContent = `${stot} segnalazione${stot !== 1 ? 'i' : ''}`;
+function apriEmail(){
+  if(!config){showToast('Configura prima i tuoi dati in Config',true);return;}
+  const dest=(config.destinatari||[]).filter(d=>d.attivo);if(!dest.length){showToast('Seleziona almeno un destinatario',true);return;}
+  const f=filterSegnalazioni(periodoInvia);if(!f.length){showToast('Nessuna segnalazione nel periodo',true);return;}
+  const to=dest.map(d=>d.email).join(',');
+  const subject='Segnalazione odori molesti - '+formatData(new Date())+' - '+config.nome+' '+config.cognome;
+  const body=costruisciTestoEmail(f);
+  window.location.href='mailto:'+to+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+}
+function selPdfRange(v,el){pdfRangeStorico=v;document.querySelectorAll('#modalPdf .periodo-opt').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');}
+function openPdfModal(){
+  ['7','30','tutti'].forEach(f=>{const k=f==='tutti'?'All':f;const el=document.getElementById('mcount'+k);const n=filterSegnalazioni(f).length;if(el)el.textContent=n+' segnalazion'+(n===1?'e':'i');});
   openModal('modalPdf');
 }
-
-function selectPdf(el, val) {
-  document.querySelectorAll('.pdf-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  pdfRangeSelezionato = val;
+function generaPDFStorico(){const f=filterSegnalazioni(pdfRangeStorico);if(!f.length){showToast('Nessuna segnalazione',true);return;}generaPDFDoc(f,pdfRangeStorico);closeModal('modalPdf');showToast('PDF generato!');}
+function generaPDFDoc(filtered,range){
+  const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'a4'});
+  const labels={'7':'Ultimi 7 giorni','30':'Ultimi 30 giorni','tutti':'Tutte le segnalazioni','oggi':'Oggi'};
+  const mitt=config?config.nome+' '+config.cognome+(config.comune?' -- '+config.comune:''):'';
+  doc.setFillColor(15,23,42);doc.rect(0,0,210,44,'F');
+  doc.setTextColor(249,115,22);doc.setFontSize(20);doc.setFont('helvetica','bold');doc.text('REPORT SEGNALAZIONI ODORI',14,16);
+  doc.setTextColor(148,163,184);doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('Periodo: '+(labels[range]||range),14,25);doc.text('Generato il: '+formatData(new Date())+' ore '+formatOra(new Date()),14,31);
+  if(mitt)doc.text('Segnalante: '+mitt,14,37);doc.text('Totale: '+filtered.length+' segnalazioni',150,25);
+  doc.autoTable({startY:50,head:[['N','Data','Ora','Posizione','Note']],
+    body:filtered.map((s,i)=>[i+1,s.data,s.ora,s.posizione,s.note||'--']),
+    headStyles:{fillColor:[30,58,95],textColor:[241,245,249],fontStyle:'bold',fontSize:8},
+    bodyStyles:{fontSize:7.5,textColor:[40,40,40]},alternateRowStyles:{fillColor:[245,247,250]},
+    columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:23},2:{cellWidth:16},3:{cellWidth:100},4:{cellWidth:41}},
+    margin:{left:14,right:14}});
+  const tot=doc.internal.getNumberOfPages();
+  for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text('Pag. '+i+'/'+tot+' -- Segnala Odori',14,290);}
+  doc.save('report-odori-'+formatDataFile()+'-'+getNextVersion()+'.pdf');
 }
-
-function generaPDF() {
-  const filtered = filterSegnalazioni(pdfRangeSelezionato);
-  if (filtered.length === 0) { showToast('Nessuna segnalazione nel periodo selezionato', true); return; }
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-
-  const labelRange = { '7': 'Ultimi 7 giorni', '30': 'Ultimi 30 giorni', 'tutti': 'Tutte le segnalazioni' };
-
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, 210, 40, 'F');
-  doc.setTextColor(249, 115, 22);
-  doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
-  doc.text('REPORT SEGNALAZIONI ODORI', 14, 18);
-  doc.setTextColor(148, 163, 184);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Periodo: ${labelRange[pdfRangeSelezionato]}`, 14, 27);
-  doc.text(`Generato il: ${formatData(new Date())} alle ${formatOra(new Date())}`, 14, 33);
-  doc.text(`Totale segnalazioni: ${filtered.length}`, 150, 27);
-
-  doc.autoTable({
-    startY: 46,
-    head: [['N°', 'Data', 'Ora', 'Posizione', 'Note']],
-    body: filtered.map((s, i) => [i + 1, s.data, s.ora, s.posizione, s.note || '-']),
-    headStyles: { fillColor: [30, 58, 95], textColor: [241, 245, 249], fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8, textColor: [50, 50, 50] },
-    alternateRowStyles: { fillColor: [245, 247, 250] },
-    columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 24 },
-      2: { cellWidth: 18 },
-      3: { cellWidth: 100 },
-      4: { cellWidth: 38 }
-    },
-    margin: { left: 14, right: 14 }
-  });
-
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Pagina ${i} di ${pageCount} — Segnalazione Odori`, 14, 290);
-  }
-
-  doc.save(`report-odori-${formatDataFile()}.pdf`);
-  closeModal('modalPdf');
-  showToast('📄 PDF generato!');
+function esportaBackup(){
+  scaricaFile(JSON.stringify({export_date:new Date().toISOString(),version:'2.0',segnalazioni},null,2),'backup-odori-'+formatDataFile()+'-'+getNextVersion()+'.json','application/json');
+  localStorage.setItem('odori_ultimo_backup',new Date().toISOString());aggiornaUltimoBackup();showToast('Backup scaricato!');
 }
-
-// ─── NAVIGAZIONE ───
-function showPage(id, tab) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  if (tab) tab.classList.add('active');
-  if (id === 'backup') { aggiornaDefaultLabel(); aggiornaUltimoBackup(); }
-  if (id === 'storico') renderLista(filtroCorrente);
+function esportaCSV(){
+  let csv='N,Data,Ora,Posizione,Latitudine,Longitudine,Note\n';
+  segnalazioni.forEach((s,i)=>{csv+=`${i+1},"${s.data}","${s.ora}","${s.posizione.replace(/"/g,'""')}","${s.lat||''}","${s.lng||''}","${(s.note||'').replace(/"/g,'""')}"\n`;});
+  scaricaFile(csv,'segnalazioni-odori-'+formatDataFile()+'-'+getNextVersion()+'.csv','text/csv;charset=utf-8;');showToast('CSV esportato!');
 }
-
-// ─── MODALI ───
-function openModal(id) {
-  document.getElementById(id).classList.add('show');
+function ripristinaBackup(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{const data=JSON.parse(e.target.result);const nuove=data.segnalazioni||data;if(!Array.isArray(nuove))throw new Error();
+    if(!confirm('Trovate '+nuove.length+' segnalazioni. Aggiungere a quelle esistenti?')){input.value='';return;}
+    const eid=segnalazioni.map(s=>s.id);const da=nuove.filter(s=>!eid.includes(s.id));
+    segnalazioni=[...segnalazioni,...da].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+    salvaDati();aggiornaUI();showToast('Ripristinate '+da.length+' segnalazioni');}catch{showToast('File non valido',true);}
+    input.value='';
+  };reader.readAsText(file);
 }
-function closeModal(id) {
-  document.getElementById(id).classList.remove('show');
+function cancellatutto(){segnalazioni=[];salvaDati();aggiornaUI();closeModal('modalClear');showToast('Dati cancellati');}
+function aggiornaUltimoBackup(){const el=document.getElementById('ultimoBackup');if(!el)return;const ub=localStorage.getItem('odori_ultimo_backup');el.textContent=ub?'Ultimo backup: '+formatData(new Date(ub))+' ore '+formatOra(new Date(ub)):'Ultimo backup: mai effettuato';}
+function checkBackupBanner(){const ub=localStorage.getItem('odori_ultimo_backup');if(!ub&&segnalazioni.length>0){document.getElementById('backupBanner').classList.add('show');return;}if(ub&&(Date.now()-new Date(ub).getTime())/86400000>=7)document.getElementById('backupBanner').classList.add('show');}
+function dismissBanner(){document.getElementById('backupBanner').classList.remove('show');}
+function goTab(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el){el.classList.add('active');}else{const tabs=document.querySelectorAll('.tab');const map={home:0,storico:1,invia:2,backup:3,config:4};if(map[id]!==undefined)tabs[map[id]].classList.add('active');}
+  if(id==='storico')renderLista(filtroCorrente);
+  if(id==='backup')aggiornaUltimoBackup();
+  if(id==='invia'){aggiornaCountsInvia();renderInviaDestList();}
+  if(id==='config')populaConfig();
 }
-document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
-});
-
-// ─── TOAST ───
-function showToast(msg, error = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast' + (error ? ' error' : '') + ' show';
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// ─── UTILITY ───
-function formatData(d) {
-  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-}
-function formatOra(d) {
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-}
-function formatDataFile() {
-  const d = new Date();
-  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-}
-function scaricaFile(content, filename, type) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content], { type }));
-  a.download = filename;
-  a.click();
-}
-
-// Fix: cancellatutto → cancellatutto già definita, ma aggiungiamo l'alias
-window.cancellatutto = function() {
-  segnalazioni = [];
-  salvaDati();
-  aggiornaUI();
-  closeModal('modalClear');
-  showToast('Dati cancellati');
-};
+function openModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');});});
+function showToast(msg,error=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(error?' error':'')+' show';setTimeout(()=>t.classList.remove('show'),3000);}
+function formatData(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
+function formatOra(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function formatDataFile(){const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
+function getNextVersion(){let v=parseInt(localStorage.getItem('odori_file_version')||'1');localStorage.setItem('odori_file_version',v+1);return 'v'+v;}
+function scaricaFile(content,filename,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=filename;a.click();}
 </script>
 </body>
 </html>
