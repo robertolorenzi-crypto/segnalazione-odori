@@ -1,52 +1,58 @@
-// ─── VERSIONE CACHE — cambia questo numero ad ogni deploy ───
-const CACHE_VERSION = 'odori-v12';
-const ASSETS = [
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './icon-192.svg'
-];
+const CACHE_VERSION = 'odori-v13';
+const STATIC_ASSETS = ['./icon-192.png', './icon-512.png', './icon-192.svg', './manifest.json'];
+const NEVER_CACHE  = ['./index.html', './sw.js'];
 
-// Installazione: metti in cache i file
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_VERSION)
-      .then(c => c.addAll(ASSETS))
-      .then(() => self.skipWaiting()) // attiva subito senza aspettare
+      .then(c => c.addAll(STATIC_ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
-// Attivazione: elimina cache vecchie
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k))
+        keys.filter(k => k !== CACHE_VERSION).map(k => {
+          console.log('[SW] Elimino cache vecchia:', k);
+          return caches.delete(k);
+        })
       ))
-      .then(() => self.clients.claim()) // prendi controllo di tutte le tab aperte
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch: rete prima, cache come fallback (così prende sempre i file aggiornati)
 self.addEventListener('fetch', e => {
-  // Solo richieste GET allo stesso dominio
   if (e.request.method !== 'GET') return;
+
+  const url = new URL(e.request.url);
+  const filename = url.pathname.split('/').pop();
+
+  // index.html e sw.js: SEMPRE dalla rete, mai dalla cache
+  if (filename === 'index.html' || filename === 'sw.js' || filename === '') {
+    e.respondWith(
+      fetch(e.request, { cache: 'no-store' })
+        .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // Icone e manifest: cache-first (cambiano raramente)
   e.respondWith(
-    fetch(e.request)
-      .then(resp => {
-        // Aggiorna la cache con la risposta fresca
-        if (resp && resp.status === 200 && resp.type === 'basic') {
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(resp => {
+        if (resp && resp.status === 200) {
           const clone = resp.clone();
           caches.open(CACHE_VERSION).then(c => c.put(e.request, clone));
         }
         return resp;
-      })
-      .catch(() => caches.match(e.request)) // offline: usa cache
+      });
+    })
   );
 });
 
-// Messaggio dall'app: forza aggiornamento immediato
 self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
 });

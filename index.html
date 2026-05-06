@@ -199,7 +199,7 @@ input[type="file"]{display:none}
 .guida-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:1px;}
 .guida-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px;}
 .guida-close{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:36px;height:36px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.guida-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.guida-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:14px;display:flex;flex-direction:column;gap:8px;}
 
 .accordion{background:#1e293b;border:1px solid #334155;border-radius:12px;overflow:hidden;transition:border-color .2s;}
 .accordion.open{border-color:#f97316;}
@@ -247,7 +247,11 @@ input[type="file"]{display:none}
       <span class="app-icon">&#128067;</span>
       <div><div class="app-name">SEGNALA ODORI</div><div class="app-sub">Monitoraggio odori zona</div></div>
     </div>
-    <button onclick="openGuida()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:34px;height:34px;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;">?</button>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <div style="font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);">v14</div>
+      <div class="live-badge"><span class="live-dot"></span>ATTIVA</div>
+      <button onclick="openGuida()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">?</button>
+    </div>
   </div>
   <div id="updateBanner" class="update-banner">
     <span class="upd-ico">&#128260;</span>
@@ -345,6 +349,13 @@ input[type="file"]{display:none}
     <div class="page" id="page-config">
       <div class="config-page">
         <div class="config-section">&#128100; Dati personali</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Versione app</div>
+            <div style="font-family:var(--fm);font-size:15px;font-weight:500;color:var(--primary);margin-top:3px;">v14</div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);text-align:right;line-height:1.5;">Ultima versione<br>installata</div>
+        </div>
         <div class="config-field"><div class="config-label">Nome</div><input class="config-input" id="cfgNome" placeholder="Mario"></div>
         <div class="config-field"><div class="config-label">Cognome</div><input class="config-input" id="cfgCognome" placeholder="Rossi"></div>
         <div class="config-field"><div class="config-label">La tua email (mittente)</div><input class="config-input" id="cfgEmail" type="email" placeholder="mario.rossi@email.it"></div>
@@ -469,6 +480,27 @@ input[type="file"]{display:none}
 </div>
 
 <script>
+const APP_VERSION='13';
+
+// ── RESET AUTOMATICO SE VERSIONE CAMBIATA ──
+(function(){
+  const stored=localStorage.getItem('odori_app_version');
+  if(stored && stored!==APP_VERSION){
+    console.log('Nuova versione rilevata: '+APP_VERSION+' (era '+stored+'). Reset cache...');
+    // Svuota cache service worker
+    if('caches'in window){
+      caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
+    }
+    // Aggiorna versione e ricarica SENZA cache
+    localStorage.setItem('odori_app_version',APP_VERSION);
+    window.location.reload(true);
+    return;
+  }
+  if(!stored){
+    localStorage.setItem('odori_app_version',APP_VERSION);
+  }
+})();
+
 const COMUNI_DB={
   'Bagnatica':'info@pec.comune.bagnatica.bg.it',
   "San Paolo d'Argon":'comune@comune.sanpaolodargon.bg.it',
