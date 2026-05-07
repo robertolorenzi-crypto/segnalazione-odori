@@ -246,7 +246,7 @@ input[type="file"]{display:none}
       <div><div class="app-name">SEGNALA ODORI</div><div class="app-sub">Monitoraggio odori zona</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <div style="font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);">v19</div>
+      <div style="font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);">v21</div>
       <div class="live-badge"><span class="live-dot"></span>ATTIVA</div>
       <button onclick="openGuida()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">?</button>
     </div>
@@ -280,7 +280,6 @@ input[type="file"]{display:none}
         <div class="pos-body">
           <div class="pos-label">Posizione attiva</div>
           <div class="pos-value" id="posValue">Caricamento...</div>
-          <div class="pos-coords" id="posCoords"></div>
           <div class="pos-actions">
             <button class="btn-sm primary" onclick="rilevaPosizione()">&#128225; GPS</button>
             <button class="btn-sm" onclick="openModalPosManu()">&#9998;&#65039; Manuale</button>
@@ -347,7 +346,7 @@ input[type="file"]{display:none}
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;">
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Versione app</div>
-            <div style="font-family:var(--fm);font-size:15px;font-weight:500;color:var(--primary);margin-top:3px;">v19</div>
+            <div style="font-family:var(--fm);font-size:15px;font-weight:500;color:var(--primary);margin-top:3px;">v21</div>
           </div>
           <div style="font-size:11px;color:var(--text3);text-align:right;line-height:1.5;">Ultima versione<br>installata</div>
         </div>
@@ -407,7 +406,13 @@ input[type="file"]{display:none}
           <div class="card-header"><span class="card-ico">&#128465;&#65039;</span><div><div class="card-title">Cancella dati</div><div class="card-sub">Elimina tutte le segnalazioni</div></div></div>
           <div class="card-body"><button class="btn-full btn-danger-full" onclick="openModal('modalClear')">&#128465;&#65039; Cancella tutto</button></div>
         </div>
-        <button class="btn-full btn-primary-full" style="margin-top:12px;font-family:var(--fd);font-size:20px;letter-spacing:.5px;" onclick="salvaConfig()">SALVA CONFIGURAZIONE</button>
+        <div class="config-section" style="margin-top:8px">&#9998; Testo email</div>
+        <div class="config-field">
+          <div class="config-label">Testo introduttivo della mail <span style="color:var(--text3);font-weight:500;font-size:10px;">(modificabile)</span></div>
+          <textarea class="config-input" id="cfgTestoEmail" rows="5" style="resize:vertical;line-height:1.5;">Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati e documentati personalmente.</textarea>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">Questo testo appare nel corpo di ogni email dopo il saluto iniziale. Non menzionare l'app — scrivi in prima persona come se stessi descrivendo la situazione.</div>
+        </div>
+                <button class="btn-full btn-primary-full" style="margin-top:12px;font-family:var(--fd);font-size:20px;letter-spacing:.5px;" onclick="salvaConfig()">SALVA CONFIGURAZIONE</button>
         <div style="height:8px"></div>
       </div>
     </div>
@@ -475,7 +480,7 @@ input[type="file"]{display:none}
 </div>
 
 <script>
-const APP_VERSION='19';
+const APP_VERSION='21';
 
 // ── RESET AUTOMATICO SE VERSIONE CAMBIATA ──
 (function(){
@@ -635,6 +640,7 @@ function populaConfig(){
   document.getElementById('cfgComune').value=config.comune||'';
   document.getElementById('cfgEmailComune').value=config.emailComune||'';
   document.getElementById('cfgIndirizzo').value=config.indirizzo||'';
+  document.getElementById('cfgTestoEmail').value=config.testoEmail||'Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati e documentati personalmente.';
   renderDestManage();
 }
 function onComuneChange(){
@@ -662,7 +668,9 @@ function salvaConfig(){
   const comune=document.getElementById('cfgComune').value,emailC=document.getElementById('cfgEmailComune').value.trim();
   config.nome=document.getElementById('cfgNome').value.trim();config.cognome=document.getElementById('cfgCognome').value.trim();
   config.email=document.getElementById('cfgEmail').value.trim();config.comune=comune;config.emailComune=emailC;
-  config.indirizzo=document.getElementById('cfgIndirizzo').value.trim();config.onboardingCompleto=true;
+  config.indirizzo=document.getElementById('cfgIndirizzo').value.trim();
+  config.testoEmail=document.getElementById('cfgTestoEmail').value.trim()||'Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati e documentati personalmente.';
+  config.onboardingCompleto=true;
   if(comune&&emailC){const idx=config.destinatari.findIndex(d=>d.tipo==='comune');const entry={nome:'Comune di '+comune,email:emailC,tipo:'comune',attivo:true};if(idx>=0)config.destinatari[idx]=entry;else config.destinatari.push(entry);}
   salvaConfigStorage();caricaPosDefault();renderDestManage();renderInviaDestList();showToast('Configurazione salvata!');
 }
@@ -678,7 +686,7 @@ function rilevaPosizione(){
   {enableHighAccuracy:true,timeout:12000,maximumAge:0});
 }
 function formattaIndirizzo(a){if(!a)return null;const v=a.road||a.pedestrian||a.path||'',n=a.house_number||'',c=a.city||a.town||a.village||a.municipality||'',p=a.county||'';return[v+(n?' '+n:''),c,p].filter(Boolean).join(', ');}
-function mostraPosizione(text,lat,lng){posCorrente={text,lat,lng};document.getElementById('posValue').textContent=text||'Posizione impostata';document.getElementById('posCoords').textContent=(lat&&lng)?'GPS: '+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5):'';}
+function mostraPosizione(text,lat,lng){posCorrente={text,lat,lng};document.getElementById('posValue').textContent=text||'Posizione impostata';}
 function openModalPosManu(){document.getElementById('inputPosManu').value=posCorrente.text||'';openModal('modalPosManu');}
 function salvaPosManu(){const v=document.getElementById('inputPosManu').value.trim();if(!v){showToast('Inserisci un indirizzo',true);return;}mostraPosizione(v,null,null);closeModal('modalPosManu');}
 function usaPosizioneDefault(){if(config&&config.indirizzo){mostraPosizione(config.indirizzo,null,null);showToast('Posizione default ripristinata');}else showToast('Imposta la posizione in Config',true);}
@@ -711,7 +719,7 @@ function renderLista(f){
     <div class="seg-left"><div class="seg-num">#${segnalazioni.indexOf(s)+1}</div><div class="seg-dot"></div></div>
     <div class="seg-body"><div class="seg-datetime">&#128197; ${s.data} &#8212; ${s.ora}</div>
     <div class="seg-pos">&#128205; ${s.posizione}</div>
-    ${s.lat?'<div class="seg-coords">GPS: '+parseFloat(s.lat).toFixed(5)+', '+parseFloat(s.lng).toFixed(5)+'</div>':''}
+    
     ${s.note?'<div class="seg-note">&#128221; '+s.note+'</div>':''}</div>
     <button class="seg-del" onclick="eliminaSegnalazione(${s.id})">&#128465;</button></div>`).join('');
 }
@@ -817,10 +825,11 @@ function costruisciTestoBreve(filtered){
   const lp=periodoInvia==='tutti'?'tutte le segnalazioni':'ultimi '+periodoInvia+' giorni';
   const mitt=(config.nome||'')+' '+(config.cognome||'');
   const comune=config.comune||'';
+  const testoPersonalizzato=config.testoEmail||'Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati e documentati personalmente.';
   let body='Gentili responsabili,\n\n';
   body+='mi chiamo '+mitt.trim();
   if(comune)body+=', residente a '+comune;
-  body+='.\n\nCon la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati tramite apposita applicazione di monitoraggio ambientale.\n\n';
+  body+='.\n\n'+testoPersonalizzato+'\n\n';
   body+='Si allega il report con '+filtered.length+' segnalazioni ('+lp+').\n\n';
   body+='Cordiali saluti,\n'+mitt.trim();
   if(config.email)body+='\n'+config.email;
@@ -834,29 +843,22 @@ function costruisciTestoEmail(filtered){
   const lp=periodoInvia==='tutti'?'tutte le segnalazioni':'ultimi '+periodoInvia+' giorni';
   const mitt=(config.nome||'')+' '+(config.cognome||'');
   const comune=config.comune||'';
-
+  const testoPersonalizzato=config.testoEmail||'Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati e documentati personalmente.';
   let body='Gentili responsabili,\n\n';
   body+='mi chiamo '+mitt.trim();
   if(comune)body+=', residente a '+comune;
-  body+='.\n\n';
-  body+='Con la presente segnalo la presenza ricorrente di odori molesti nella zona, ';
-  body+='rilevati tramite apposita applicazione di monitoraggio ambientale.\n\n';
-
-  // ── REPORT SEGNALAZIONI ──
-  body+='════════════════════════════════════════\n';
-  body+='REPORT SEGNALAZIONI ODORI — '+lp.toUpperCase()+'\n';
+  body+='.\n\n'+testoPersonalizzato+'\n\n';
+  body+='=====================================\n';
+  body+='REPORT SEGNALAZIONI ODORI -- '+lp.toUpperCase()+'\n';
   body+='Totale: '+filtered.length+' segnalazioni\n';
-  body+='════════════════════════════════════════\n\n';
-
+  body+='=====================================\n\n';
   filtered.forEach((s,i)=>{
     body+=(i+1)+'. '+s.data+' ore '+s.ora+'\n';
     body+='   Posizione: '+s.posizione+'\n';
-    if(s.lat&&s.lng)body+='   GPS: '+parseFloat(s.lat).toFixed(5)+', '+parseFloat(s.lng).toFixed(5)+'\n';
     if(s.note)body+='   Note: '+s.note+'\n';
     body+='\n';
   });
-
-  body+='════════════════════════════════════════\n\n';
+  body+='=====================================\n\n';
   body+='Si chiede di voler adottare i provvedimenti necessari.\n';
   body+='Rimango a disposizione per qualsiasi chiarimento.\n\n';
   body+='Cordiali saluti,\n'+mitt.trim();
@@ -1202,52 +1204,48 @@ function scaricaFile(content,filename,type){const a=document.createElement('a');
         <span class="acc-arrow">&#9660;</span>
       </button>
       <div class="accordion-body">
-        <p class="acc-text">
-          Vai nella scheda <strong>&#128232; Invia</strong>. Scegli il periodo da includere nel report,
-          poi premi <em>&#128228; CONDIVIDI REPORT PDF</em>:
-        </p>
-        <div class="acc-row"><div class="acc-row-ico">&#128228;</div><div class="acc-row-body"><div class="acc-row-title">CONDIVIDI REPORT PDF (consigliato)</div><div class="acc-row-desc">Si apre il pannello del telefono con il PDF gia' allegato. Scegli Gmail o Mail, scrivi i destinatari e invia. Il testo dell'email viene copiato automaticamente negli appunti: incollalo nel campo messaggio.</div></div></div>
-        <div class="acc-row"><div class="acc-row-ico">&#128232;</div><div class="acc-row-body"><div class="acc-row-title">Solo testo email</div><div class="acc-row-desc">Apre l'email con testo e destinatari gia' compilati. In questo caso devi allegare il PDF a mano usando "Scarica solo PDF".</div></div></div>
-        <svg class="mock" viewBox="0 0 300 95" xmlns="http://www.w3.org/2000/svg">
-          <rect width="300" height="95" fill="#0f172a" rx="8"/>
+        <p class="acc-text">Vai nella scheda <strong>&#128232; Invia</strong>. Scegli il periodo, poi hai due strade:</p>
+        <div class="acc-row"><div class="acc-row-ico">&#128231;</div><div class="acc-row-body"><div class="acc-row-title">INVIA MAIL — il piu' semplice</div><div class="acc-row-desc">Apre la tua app email con destinatari, oggetto, testo e tutte le segnalazioni gia' scritti nel messaggio. Premi solo Invia.</div></div></div>
+        <div class="acc-row"><div class="acc-row-ico">&#128228;</div><div class="acc-row-body"><div class="acc-row-title">CONDIVIDI REPORT PDF</div><div class="acc-row-desc">Apre il pannello del telefono con il PDF allegato. Scegli la tua app email e invia. Il testo viene copiato automaticamente negli appunti.</div></div></div>
+        <div class="acc-row"><div class="acc-row-ico">&#9881;&#65039;</div><div class="acc-row-body"><div class="acc-row-title">Selezionare i destinatari</div><div class="acc-row-desc">Premi <em>&#9998; Modifica</em> nella card Destinatari per scegliere a chi inviare. Puoi gestire l'elenco completo dalla scheda Config.</div></div></div>
+        <svg class="mock" viewBox="0 0 300 112" xmlns="http://www.w3.org/2000/svg">
+          <rect width="300" height="112" fill="#0f172a" rx="8"/>
           <rect x="0" y="0" width="300" height="24" fill="#1e3a5f"/>
           <text x="14" y="16" font-size="10" fill="white" font-family="sans-serif" font-weight="bold">&#128232; INVIA</text>
-          <rect x="8" y="30" width="86" height="28" rx="6" fill="rgba(249,115,22,.15)" stroke="#f97316" stroke-width="1.5"/>
-          <text x="51" y="42" text-anchor="middle" font-size="14" fill="#f97316" font-family="sans-serif" font-weight="bold">12</text>
-          <text x="51" y="52" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">7 giorni</text>
-          <rect x="108" y="30" width="86" height="28" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-          <text x="151" y="42" text-anchor="middle" font-size="14" fill="#f97316" font-family="sans-serif" font-weight="bold">38</text>
-          <text x="151" y="52" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">30 giorni</text>
-          <rect x="208" y="30" width="84" height="28" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-          <text x="250" y="42" text-anchor="middle" font-size="14" fill="#f97316" font-family="sans-serif" font-weight="bold">54</text>
-          <text x="250" y="52" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">Tutte</text>
-          <rect x="8" y="64" width="284" height="24" rx="6" fill="#f97316"/>
-          <text x="150" y="79" text-anchor="middle" font-size="10" fill="white" font-family="sans-serif" font-weight="bold">&#128228; CONDIVIDI REPORT PDF</text>
+          <rect x="8" y="30" width="86" height="26" rx="6" fill="rgba(249,115,22,.15)" stroke="#f97316" stroke-width="1.5"/>
+          <text x="51" y="41" text-anchor="middle" font-size="13" fill="#f97316" font-family="sans-serif" font-weight="bold">12</text>
+          <text x="51" y="51" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">7 giorni</text>
+          <rect x="108" y="30" width="86" height="26" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="151" y="47" text-anchor="middle" font-size="13" fill="#f97316" font-family="sans-serif" font-weight="bold">54</text>
+          <text x="151" y="57" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">30 giorni</text>
+          <rect x="208" y="30" width="84" height="26" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+          <text x="250" y="47" text-anchor="middle" font-size="13" fill="#f97316" font-family="sans-serif" font-weight="bold">88</text>
+          <text x="250" y="57" text-anchor="middle" font-size="7" fill="#94a3b8" font-family="sans-serif">Tutte</text>
+          <rect x="8" y="62" width="284" height="20" rx="6" fill="#f97316"/>
+          <text x="150" y="75" text-anchor="middle" font-size="9" fill="white" font-family="sans-serif" font-weight="bold">&#128228; CONDIVIDI REPORT PDF</text>
+          <rect x="8" y="86" width="284" height="20" rx="6" fill="#0ea5e9"/>
+          <text x="150" y="99" text-anchor="middle" font-size="9" fill="white" font-family="sans-serif" font-weight="bold">&#128231; INVIA MAIL</text>
         </svg>
       </div>
     </div>
 
-    <!-- 7. BACKUP -->
+    <!-- 7. BACKUP E CONFIG -->
     <div class="accordion" id="acc7">
       <button class="accordion-btn" onclick="toggleAcc('acc7')">
         <div class="acc-num">7</div>
-        <div class="acc-label">Fare il backup dei dati</div>
+        <div class="acc-label">Backup, Config e testo email</div>
         <span class="acc-arrow">&#9660;</span>
       </button>
       <div class="accordion-body">
-        <p class="acc-text">
-          I dati esistono <strong>solo sul tuo telefono</strong>. Se disinstalli l'app o cambi telefono
-          li perdi per sempre. Vai in <strong>&#9881; Config</strong>, scorri fino a
-          <em>Backup e dati</em> e premi <em>Backup JSON</em> ogni settimana.
-          Salvalo su Google Drive o iCloud.
-        </p>
-        <div class="acc-row"><div class="acc-row-ico">&#128190;</div><div class="acc-row-body"><div class="acc-row-title">Backup JSON</div><div class="acc-row-desc">Salva tutte le segnalazioni in un file. Puoi ricaricarlo in futuro con "Ripristina" per recuperarle.</div></div></div>
-        <div class="acc-row"><div class="acc-row-ico">&#128202;</div><div class="acc-row-body"><div class="acc-row-title">Esporta CSV</div><div class="acc-row-desc">Esporta le segnalazioni come foglio Excel, utile per analisi o per allegarlo a documenti ufficiali.</div></div></div>
+        <p class="acc-text">La scheda <strong>&#9881;&#65039; Config</strong> raccoglie tutte le impostazioni e anche la sezione backup.</p>
+        <div class="acc-row"><div class="acc-row-ico">&#128190;</div><div class="acc-row-body"><div class="acc-row-title">Backup JSON — fallo ogni settimana</div><div class="acc-row-desc">I dati esistono solo sul telefono. Se disinstalli l'app li perdi. Scorri in fondo a Config fino a <em>Backup e dati</em> e premi <em>Backup JSON</em>. Salvalo su Google Drive o iCloud.</div></div></div>
+        <div class="acc-row"><div class="acc-row-ico">&#128202;</div><div class="acc-row-body"><div class="acc-row-title">Esporta CSV</div><div class="acc-row-desc">Crea un file Excel con tutte le segnalazioni, utile per analisi o per allegarlo a documenti ufficiali.</div></div></div>
+        <div class="acc-row"><div class="acc-row-ico">&#9998;&#65039;</div><div class="acc-row-body"><div class="acc-row-title">Testo email personalizzabile</div><div class="acc-row-desc">In Config trovi la sezione <em>Testo email</em> dove puoi modificare il paragrafo che appare nel corpo di ogni mail inviata. Scrivi in prima persona, senza menzionare l'app.</div></div></div>
         <div class="acc-warn">&#9888;&#65039; Quando vedi il <strong>banner giallo</strong> in cima all'app non ignorarlo: significa che non fai backup da piu' di 7 giorni.</div>
       </div>
     </div>
 
-    <div style="height:10px;"></div>
+    <div style="height<div style="height:10px;"></div>
   </div>
 </div>
 
