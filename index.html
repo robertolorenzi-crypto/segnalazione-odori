@@ -246,7 +246,7 @@ input[type="file"]{display:none}
       <div><div class="app-name">SEGNALA ODORI</div><div class="app-sub">Monitoraggio odori zona</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <div style="font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);">v16</div>
+      <div style="font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);">v18</div>
       <div class="live-badge"><span class="live-dot"></span>ATTIVA</div>
       <button onclick="openGuida()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">?</button>
     </div>
@@ -331,10 +331,17 @@ input[type="file"]{display:none}
           </div>
         </div>
         <div class="info-box"><span>&#128161;</span><div>Premi <strong>CONDIVIDI REPORT</strong>: si apre il pannello del telefono con il PDF gia' allegato. Scegli Email, poi incolla il testo dell'email che verra' copiato automaticamente.</div></div>
-        <button class="btn-full btn-primary-full" style="font-family:var(--fd);font-size:22px;letter-spacing:.5px;" onclick="condividiReport()">&#128228; CONDIVIDI REPORT PDF</button>
-        <button class="btn-full btn-surface" style="margin-top:-4px;font-size:13px;" onclick="apriEmail()">&#128232; Solo testo email (senza allegato)</button>
-        <button class="btn-full btn-surface" style="margin-top:-4px;font-size:12px;color:var(--text3);" onclick="generaPDFInvia()">&#128229; Scarica solo PDF</button>
-        <div class="info-box"><span>&#8505;&#65039;</span><div>Gestisci i destinatari dalla scheda <strong>&#9881;&#65039; Config</strong>.</div></div>
+        <button class="btn-full btn-primary-full" style="font-family:var(--fd);font-size:20px;letter-spacing:.5px;" onclick="condividiReport()">&#128228; CONDIVIDI REPORT PDF</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="btn-full btn-surface" style="font-size:12px;font-weight:700;background:#ea4335;color:#fff;border:none;" onclick="apriGmail()">&#9993; Apri Gmail</button>
+          <button class="btn-full btn-surface" style="font-size:12px;" onclick="apriEmail()">&#128231; Altra email</button>
+        </div>
+        <button class="btn-full btn-surface" style="font-size:12px;color:var(--text3);" onclick="generaPDFInvia()">&#128229; Scarica solo PDF</button>
+        <div class="info-box"><span>&#8505;&#65039;</span><div>
+          <strong>CONDIVIDI PDF</strong>: apre il pannello con PDF allegato.<br>
+          <strong>Gmail / Altra email</strong>: apre l'email con destinatari, oggetto, testo <em>e report segnalazioni</em> gia' scritti nel messaggio — nessun allegato necessario.<br>
+          Gestisci i destinatari in <strong>&#9881; Config</strong>.
+        </div></div>
       </div>
     </div>
     <div class="page" id="page-config">
@@ -343,7 +350,7 @@ input[type="file"]{display:none}
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;">
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Versione app</div>
-            <div style="font-family:var(--fm);font-size:15px;font-weight:500;color:var(--primary);margin-top:3px;">v16</div>
+            <div style="font-family:var(--fm);font-size:15px;font-weight:500;color:var(--primary);margin-top:3px;">v18</div>
           </div>
           <div style="font-size:11px;color:var(--text3);text-align:right;line-height:1.5;">Ultima versione<br>installata</div>
         </div>
@@ -471,7 +478,7 @@ input[type="file"]{display:none}
 </div>
 
 <script>
-const APP_VERSION='16';
+const APP_VERSION='18';
 
 // ── RESET AUTOMATICO SE VERSIONE CAMBIATA ──
 (function(){
@@ -766,7 +773,7 @@ async function condividiReport(){
     showToast('Errore generazione PDF — ricarica la pagina',true);return;
   }
 
-  const testoEmail=costruisciTestoEmail(f);
+  const testoEmail=costruisciTestoBreve(f);
   // Copia testo negli appunti (fire-and-forget, non blocca)
   try{navigator.clipboard.writeText(testoEmail);}catch(e){}
 
@@ -808,24 +815,58 @@ async function condividiReport(){
   },800);
 }
 
+function costruisciTestoBreve(filtered){
+  if(!config)return '';
+  const lp=periodoInvia==='tutti'?'tutte le segnalazioni':'ultimi '+periodoInvia+' giorni';
+  const mitt=(config.nome||'')+' '+(config.cognome||'');
+  const comune=config.comune||'';
+  let body='Gentili responsabili,\n\n';
+  body+='mi chiamo '+mitt.trim();
+  if(comune)body+=', residente a '+comune;
+  body+='.\n\nCon la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati tramite apposita applicazione di monitoraggio ambientale.\n\n';
+  body+='Si allega il report con '+filtered.length+' segnalazioni ('+lp+').\n\n';
+  body+='Cordiali saluti,\n'+mitt.trim();
+  if(config.email)body+='\n'+config.email;
+  return body;
+}
+
 function scaricaBlob(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
 
 function costruisciTestoEmail(filtered){
   if(!config)return '';
   const lp=periodoInvia==='tutti'?'tutte le segnalazioni':'ultimi '+periodoInvia+' giorni';
+  const mitt=(config.nome||'')+' '+(config.cognome||'');
+  const comune=config.comune||'';
+
   let body='Gentili responsabili,\n\n';
-  body+='mi chiamo '+config.nome+' '+config.cognome;
-  if(config.comune)body+=', residente a '+config.comune;
-  body+='.\n\nCon la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati tramite apposita applicazione di monitoraggio.\n\n';
-  body+='Riepilogo segnalazioni ('+lp+'):\n';
-  body+='--------------------------------------------------\n';
-  filtered.forEach((s,i)=>{body+=(i+1)+'. '+s.data+' ore '+s.ora+' -- '+s.posizione;if(s.note)body+=' -- Note: '+s.note;body+='\n';});
-  body+='--------------------------------------------------\n';
-  body+='Totale: '+filtered.length+' segnalazioni\n\n';
-  body+='Si allega il report in formato PDF.\n\nIn attesa di un vostro riscontro, rimango a disposizione.\n\nCordiali saluti,\n'+config.nome+' '+config.cognome;
+  body+='mi chiamo '+mitt.trim();
+  if(comune)body+=', residente a '+comune;
+  body+='.\n\n';
+  body+='Con la presente segnalo la presenza ricorrente di odori molesti nella zona, ';
+  body+='rilevati tramite apposita applicazione di monitoraggio ambientale.\n\n';
+
+  // ── REPORT SEGNALAZIONI ──
+  body+='════════════════════════════════════════\n';
+  body+='REPORT SEGNALAZIONI ODORI — '+lp.toUpperCase()+'\n';
+  body+='Totale: '+filtered.length+' segnalazioni\n';
+  body+='════════════════════════════════════════\n\n';
+
+  filtered.forEach((s,i)=>{
+    body+=(i+1)+'. '+s.data+' ore '+s.ora+'\n';
+    body+='   Posizione: '+s.posizione+'\n';
+    if(s.lat&&s.lng)body+='   GPS: '+parseFloat(s.lat).toFixed(5)+', '+parseFloat(s.lng).toFixed(5)+'\n';
+    if(s.note)body+='   Note: '+s.note+'\n';
+    body+='\n';
+  });
+
+  body+='════════════════════════════════════════\n\n';
+  body+='Si chiede di voler adottare i provvedimenti necessari.\n';
+  body+='Rimango a disposizione per qualsiasi chiarimento.\n\n';
+  body+='Cordiali saluti,\n'+mitt.trim();
   if(config.email)body+='\n'+config.email;
   return body;
 }
+
 function apriEmail(){
   if(!config){showToast('Configura prima i tuoi dati in Config',true);return;}
   const dest=(config.destinatari||[]).filter(d=>d.attivo);if(!dest.length){showToast('Seleziona almeno un destinatario',true);return;}
@@ -911,7 +952,28 @@ function generaPDFBlob(filtered,range){
   return doc.output('blob');
 }
 
-function generaPDFStorico(){const f=filterSegnalazioni(pdfRangeStorico);if(!f.length){showToast('Nessuna segnalazione',true);return;}generaPDFDoc(f,pdfRangeStorico);closeModal('modalPdf');showToast('PDF generato!');}
+async function generaPDFStorico(){
+  const f=filterSegnalazioni(pdfRangeStorico);
+  if(!f.length){showToast('Nessuna segnalazione nel periodo',true);return;}
+  const doc=generaPDFDoc(f,pdfRangeStorico);
+  if(!doc){return;}
+  closeModal('modalPdf');
+  const fileName='report-odori-'+formatDataFile()+'-'+getNextVersion()+'.pdf';
+  const blob=doc.output('blob');
+  // Prova Web Share con file
+  if(typeof navigator.share==='function'){
+    const pdfFile=new File([blob],fileName,{type:'application/pdf'});
+    if(typeof navigator.canShare==='function'&&navigator.canShare({files:[pdfFile]})){
+      try{
+        await navigator.share({files:[pdfFile],title:'Report Segnalazioni Odori'});
+        return;
+      }catch(e){if(e.name==='AbortError')return;}
+    }
+  }
+  // Fallback: download diretto
+  scaricaBlob(blob,fileName);
+  showToast('PDF salvato nei Download');
+}
 function esportaBackup(){
   scaricaFile(JSON.stringify({export_date:new Date().toISOString(),version:'2.0',segnalazioni},null,2),'backup-odori-'+formatDataFile()+'-'+getNextVersion()+'.json','application/json');
   localStorage.setItem('odori_ultimo_backup',new Date().toISOString());aggiornaUltimoBackup();showToast('Backup scaricato!');
