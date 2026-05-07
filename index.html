@@ -246,7 +246,7 @@ input[type="file"]{display:none}
       <div><div class="app-name">SEGNALA ODORI</div><div class="app-sub">Monitoraggio odori zona</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <div style="font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);">v22</div>
+      <div style="font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);">v23</div>
       <div class="live-badge"><span class="live-dot"></span>ATTIVA</div>
       <button onclick="openGuida()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">?</button>
     </div>
@@ -346,7 +346,7 @@ input[type="file"]{display:none}
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;">
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Versione app</div>
-            <div style="font-family:var(--fm);font-size:15px;font-weight:500;color:var(--primary);margin-top:3px;">v22</div>
+            <div style="font-family:var(--fm);font-size:15px;font-weight:500;color:var(--primary);margin-top:3px;">v23</div>
           </div>
           <div style="font-size:11px;color:var(--text3);text-align:right;line-height:1.5;">Ultima versione<br>installata</div>
         </div>
@@ -378,7 +378,11 @@ input[type="file"]{display:none}
           <div class="config-label">Indirizzo di default (posizione abituale)</div>
           <input class="config-input" id="cfgIndirizzo" placeholder="Es: Via Roma 5, Bagnatica (BG)">
         </div>
-        <div class="config-section" style="margin-top:8px">&#128232; Destinatari email</div>
+        <div class="config-section" style="margin-top:8px">&#9998; Testo email</div>
+        <div class="config-field">
+          <div class="config-label">Testo introduttivo della mail <span style="color:var(--text3);font-weight:500;font-size:10px;">(modificabile)</span></div>
+          <textarea class="config-input" id="cfgTestoEmail" rows="5" style="resize:vertical;line-height:1.5;">Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati e documentati personalmente.</textarea>
+          <div class="config-section" style="margin-top:8px">&#128232; Destinatari email</div>
         <div class="dest-manage" id="destManageList"></div>
         <button class="btn-full btn-surface" style="margin-top:4px" onclick="openModal('modalAddDest')">&#10133; Aggiungi destinatario</button>
 
@@ -406,11 +410,7 @@ input[type="file"]{display:none}
           <div class="card-header"><span class="card-ico">&#128465;&#65039;</span><div><div class="card-title">Cancella dati</div><div class="card-sub">Elimina tutte le segnalazioni</div></div></div>
           <div class="card-body"><button class="btn-full btn-danger-full" onclick="openModal('modalClear')">&#128465;&#65039; Cancella tutto</button></div>
         </div>
-        <div class="config-section" style="margin-top:8px">&#9998; Testo email</div>
-        <div class="config-field">
-          <div class="config-label">Testo introduttivo della mail <span style="color:var(--text3);font-weight:500;font-size:10px;">(modificabile)</span></div>
-          <textarea class="config-input" id="cfgTestoEmail" rows="5" style="resize:vertical;line-height:1.5;">Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati e documentati personalmente.</textarea>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px;">Questo testo appare nel corpo di ogni email dopo il saluto iniziale. Non menzionare l'app — scrivi in prima persona come se stessi descrivendo la situazione.</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Questo testo appare nel corpo di ogni email dopo il saluto iniziale. Non menzionare l'app — scrivi in prima persona come se stessi descrivendo la situazione.</div>
         </div>
                 <button class="btn-full btn-primary-full" style="margin-top:12px;font-family:var(--fd);font-size:20px;letter-spacing:.5px;" onclick="salvaConfig()">SALVA CONFIGURAZIONE</button>
         <div style="height:8px"></div>
@@ -480,7 +480,7 @@ input[type="file"]{display:none}
 </div>
 
 <script>
-const APP_VERSION='22';
+const APP_VERSION='23';
 
 // ── RESET AUTOMATICO SE VERSIONE CAMBIATA ──
 (function(){
@@ -644,8 +644,20 @@ function populaConfig(){
   renderDestManage();
 }
 function onComuneChange(){
-  const val=document.getElementById('cfgComune').value,inp=document.getElementById('cfgEmailComune');
-  if(COMUNI_DB[val])inp.value=COMUNI_DB[val];else if(val!=='altro')inp.value='';
+  const val=document.getElementById('cfgComune').value;
+  const inp=document.getElementById('cfgEmailComune');
+  if(COMUNI_DB[val]){
+    inp.value=COMUNI_DB[val];
+    // Aggiorna automaticamente il destinatario comune in config
+    if(config&&config.destinatari){
+      const idx=config.destinatari.findIndex(d=>d.tipo==='comune');
+      const entry={nome:'Comune di '+val,email:COMUNI_DB[val],tipo:'comune',attivo:true};
+      if(idx>=0)config.destinatari[idx]=entry;else config.destinatari.push(entry);
+      renderDestManage();
+    }
+  }else if(val!=='altro'){
+    inp.value='';
+  }
 }
 function renderDestManage(){
   if(!config)return;const el=document.getElementById('destManageList');if(!el)return;
@@ -813,7 +825,7 @@ async function condividiReport(){
     const dest=(config.destinatari||[]).filter(d=>d.attivo);
     if(dest.length>0){
       const to=dest.map(d=>d.email).join(',');
-      const subject='Segnalazione odori molesti - '+formatData(new Date())+' - '+config.nome+' '+config.cognome;
+      const subject='Segnalazione odori molesti - '+formatData(new Date())+(config.comune?' - '+config.comune:'');
       window.location.href='mailto:'+to+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(testoEmail);
     }
   },800);
@@ -870,7 +882,7 @@ function apriEmail(){
   const dest=(config.destinatari||[]).filter(d=>d.attivo);if(!dest.length){showToast('Seleziona almeno un destinatario',true);return;}
   const f=filterSegnalazioni(periodoInvia);if(!f.length){showToast('Nessuna segnalazione nel periodo',true);return;}
   const to=dest.map(d=>d.email).join(',');
-  const subject='Segnalazione odori molesti - '+formatData(new Date())+' - '+config.nome+' '+config.cognome;
+  const subject='Segnalazione odori molesti - '+formatData(new Date())+(config.comune?' - '+config.comune:'');
   const body=costruisciTestoEmail(f);
   window.location.href='mailto:'+to+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
 }
