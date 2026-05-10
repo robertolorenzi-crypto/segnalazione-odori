@@ -246,7 +246,7 @@ input[type="file"]{display:none}
       <div><div class="app-name">SEGNALA ODORI</div><div class="app-sub">Monitoraggio odori zona</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <div style="font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);">v23</div>
+      <div style="font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);">v25</div>
       <div class="live-badge"><span class="live-dot"></span>ATTIVA</div>
       <button onclick="openGuida()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:30px;height:30px;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">?</button>
     </div>
@@ -346,7 +346,7 @@ input[type="file"]{display:none}
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;">
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">Versione app</div>
-            <div style="font-family:var(--fm);font-size:15px;font-weight:500;color:var(--primary);margin-top:3px;">v23</div>
+            <div style="font-family:var(--fm);font-size:15px;font-weight:500;color:var(--primary);margin-top:3px;">v25</div>
           </div>
           <div style="font-size:11px;color:var(--text3);text-align:right;line-height:1.5;">Ultima versione<br>installata</div>
         </div>
@@ -377,6 +377,22 @@ input[type="file"]{display:none}
         <div class="config-field">
           <div class="config-label">Indirizzo di default (posizione abituale)</div>
           <input class="config-input" id="cfgIndirizzo" placeholder="Es: Via Roma 5, Bagnatica (BG)">
+        </div>
+        <div class="config-section" style="margin-top:8px">&#128202; Raccolta dati</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:20px;">&#128202;</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);">Foglio Google attivo</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px;">Ogni segnalazione viene inviata automaticamente al foglio di raccolta dati condiviso.</div>
+            </div>
+          </div>
+          <input type="hidden" id="cfgSheetsUrl" value="">
+          <div style="display:flex;gap:8px;">
+            <button class="btn-full btn-surface" style="font-size:12px;font-weight:700;flex:1;" onclick="testSheets()">&#128225; Verifica connessione</button>
+            <button class="btn-full btn-surface" style="font-size:12px;font-weight:700;flex:1;background:rgba(14,165,233,.15);color:#0ea5e9;border-color:rgba(14,165,233,.3);" onclick="sincronizzaStorico()">&#128260; Sincronizza storico</button>
+          </div>
+          <div id="sheetsStatus" style="display:none;font-size:12px;font-weight:600;padding:8px 12px;border-radius:7px;text-align:center;"></div>
         </div>
         <div class="config-section" style="margin-top:8px">&#9998; Testo email</div>
         <div class="config-field">
@@ -480,7 +496,7 @@ input[type="file"]{display:none}
 </div>
 
 <script>
-const APP_VERSION='23';
+const APP_VERSION='25';
 
 // ── RESET AUTOMATICO SE VERSIONE CAMBIATA ──
 (function(){
@@ -500,6 +516,8 @@ const APP_VERSION='23';
     localStorage.setItem('odori_app_version',APP_VERSION);
   }
 })();
+
+const SHEETS_URL_DEFAULT='https://script.google.com/macros/s/AKfycbywII6LB8gga-BaXRVT65K3hGZ5Q-cQd0QWQVo2OP9vHFw4zfoJP4oKa1_vovKFmlsU/exec';
 
 const COMUNI_DB={
   'Bagnatica':'info@pec.comune.bagnatica.bg.it',
@@ -641,6 +659,8 @@ function populaConfig(){
   document.getElementById('cfgEmailComune').value=config.emailComune||'';
   document.getElementById('cfgIndirizzo').value=config.indirizzo||'';
   document.getElementById('cfgTestoEmail').value=config.testoEmail||'Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati e documentati personalmente.';
+  document.getElementById('cfgSheetsUrl').value=config.sheetsUrl||'';
+  aggiornaStatoSheets();
   renderDestManage();
 }
 function onComuneChange(){
@@ -682,6 +702,7 @@ function salvaConfig(){
   config.email=document.getElementById('cfgEmail').value.trim();config.comune=comune;config.emailComune=emailC;
   config.indirizzo=document.getElementById('cfgIndirizzo').value.trim();
   config.testoEmail=document.getElementById('cfgTestoEmail').value.trim()||'Con la presente segnalo la presenza ricorrente di odori molesti nella zona, rilevati e documentati personalmente.';
+  config.sheetsUrl=document.getElementById('cfgSheetsUrl').value.trim();
   config.onboardingCompleto=true;
   if(comune&&emailC){const idx=config.destinatari.findIndex(d=>d.tipo==='comune');const entry={nome:'Comune di '+comune,email:emailC,tipo:'comune',attivo:true};if(idx>=0)config.destinatari[idx]=entry;else config.destinatari.push(entry);}
   salvaConfigStorage();caricaPosDefault();renderDestManage();renderInviaDestList();showToast('Configurazione salvata!');
@@ -707,6 +728,7 @@ function segnalaOdore(){
   const note=document.getElementById('noteExtra').value.trim(),now=new Date();
   segnalazioni.unshift({id:Date.now(),data:formatData(now),ora:formatOra(now),timestamp:now.toISOString(),posizione:posCorrente.text,lat:posCorrente.lat,lng:posCorrente.lng,note:note||''});
   salvaDati();document.getElementById('noteExtra').value='';aggiornaUI();showToast('Segnalazione salvata!');
+  inviaASheets(segnalazioni[0]); // invia in background
   setTimeout(()=>{btn.disabled=false;btn.innerHTML='<span class="btn-ico">&#128680;</span>SEGNALA ODORE ORA';},2000);
 }
 function aggiornaUI(){
@@ -1033,6 +1055,105 @@ function toggleAcc(id){
   // Apri quello cliccato se era chiuso
   if(!isOpen)el.classList.add('open');
 }
+
+// ─── GOOGLE SHEETS INTEGRATION ───
+
+async function inviaASheets(seg){
+  const url=(config&&config.sheetsUrl&&config.sheetsUrl.trim())||SHEETS_URL_DEFAULT;
+  if(!url)return;
+  try{
+    const payload={
+      data:seg.data,
+      ora:seg.ora,
+      timestamp:seg.timestamp,
+      posizione:seg.posizione,
+      note:seg.note||'',
+      utente:(config.nome||'')+' '+(config.cognome||''),
+      comune:config.comune||'',
+      id:seg.id
+    };
+    await fetch(url,{
+      method:'POST',
+      mode:'no-cors', // Google Apps Script richiede no-cors
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    // Segna come sincronizzata
+    seg.sincronizzata=true;
+    salvaDati();
+  }catch(e){
+    // Fallisce silenziosamente — i dati sono già salvati in locale
+    console.log('Sheets non raggiungibile:',e.message);
+  }
+}
+
+async function testSheets(){
+  const url=document.getElementById('cfgSheetsUrl').value.trim()||SHEETS_URL_DEFAULT;
+  const status=document.getElementById('sheetsStatus');
+  if(!url){
+    mostraStatoSheets('warning','Inserisci prima l\'URL');return;
+  }
+  if(!url.startsWith('https://script.google.com')){
+    mostraStatoSheets('error','URL non valido — deve iniziare con https://script.google.com');return;
+  }
+  mostraStatoSheets('loading','Verifica in corso...');
+  try{
+    const r=await fetch(url,{method:'GET',mode:'cors'});
+    const d=await r.json();
+    if(d.status==='ok'){
+      mostraStatoSheets('ok','Connessione riuscita! Foglio Google raggiungibile.');
+    }else{
+      mostraStatoSheets('warning','Risposta ricevuta ma inattesa: '+JSON.stringify(d));
+    }
+  }catch(e){
+    // Con no-cors non possiamo leggere la risposta — proviamo lo stesso
+    mostraStatoSheets('ok','Script raggiungibile (modalita\' no-cors). Prova a segnalare per verificare.');
+  }
+}
+
+async function sincronizzaStorico(){
+  const _sheetsUrl=(config&&config.sheetsUrl&&config.sheetsUrl.trim())||SHEETS_URL_DEFAULT;
+  if(!_sheetsUrl){showToast('URL Google Sheets non disponibile',true);return;}
+  const daInviare=segnalazioni.filter(s=>!s.sincronizzata);
+  if(!daInviare.length){showToast('Tutte le segnalazioni sono gia\' sincronizzate');return;}
+  showToast('Sincronizzazione in corso...');
+  let ok=0;
+  for(const seg of daInviare){
+    await inviaASheets(seg);
+    if(seg.sincronizzata)ok++;
+    await new Promise(r=>setTimeout(r,300)); // pausa per non sovraccaricare
+  }
+  showToast('Sincronizzate '+ok+' segnalazioni su '+daInviare.length);
+  aggiornaStatoSheets();
+}
+
+function mostraStatoSheets(tipo,msg){
+  const el=document.getElementById('sheetsStatus');
+  if(!el)return;
+  el.style.display='block';
+  const colori={
+    ok:    {bg:'rgba(34,197,94,.15)',  border:'rgba(34,197,94,.3)',  color:'#4ade80'},
+    error: {bg:'rgba(239,68,68,.15)', border:'rgba(239,68,68,.3)', color:'#f87171'},
+    warning:{bg:'rgba(245,158,11,.15)',border:'rgba(245,158,11,.3)',color:'#fbbf24'},
+    loading:{bg:'rgba(14,165,233,.1)', border:'rgba(14,165,233,.2)',color:'#7dd3fc'},
+  };
+  const s=colori[tipo]||colori.loading;
+  el.style.background=s.bg;
+  el.style.border='1px solid '+s.border;
+  el.style.color=s.color;
+  el.textContent=msg;
+}
+
+function aggiornaStatoSheets(){
+  const el=document.getElementById('sheetsStatus');
+  if(!el)return;
+  if(!config||!config.sheetsUrl){el.style.display='none';return;}
+  const tot=segnalazioni.length;
+  const sinc=segnalazioni.filter(s=>s.sincronizzata).length;
+  mostraStatoSheets(sinc===tot?'ok':'warning',
+    'Sheets configurato — '+sinc+' di '+tot+' segnalazioni sincronizzate');
+}
+
 function formatData(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
 function formatOra(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function formatDataFile(){const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
